@@ -42,13 +42,13 @@ const IndividualDashboard: React.FC = () => {
     );
   }
 
-  const sortedData = memberData.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  const chartData = sortedData.map(record => ({ date: record.date, total: record.totalSolved, leetcode: record.leetcodeTotal, skillrack: record.skillrackTotal, codechef: record.codechefTotal, hackerrank: record.hackerrankTotal, daily: record.totalDailyIncrease }));
+  const sortedData = memberData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const chartData = sortedData.slice().reverse().map(record => ({ date: record.date, total: record.totalSolved, leetcode: record.leetcodeTotal, skillrack: record.skillrackTotal, codechef: record.codechefTotal, hackerrank: record.hackerrankTotal, daily: record.totalDailyIncrease }));
 
-  const latest = memberData[0];
-  const oldest = memberData[memberData.length - 1];
+  const latest = sortedData[0];
+  const oldest = sortedData[sortedData.length - 1];
   const totalGrowth = latest.totalSolved - (oldest?.totalSolved || 0);
-  const avgDaily = memberData.length > 0 ? memberData.reduce((sum, record) => sum + record.totalDailyIncrease, 0) / memberData.length : 0;
+  const avgDaily = memberData.length > 0 ? totalGrowth / memberData.length : 0;
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 animate-fade-in relative">
@@ -75,6 +75,34 @@ const IndividualDashboard: React.FC = () => {
               <span className="px-3 py-1 bg-surface border border-border rounded-lg text-sm font-semibold text-white">{memberInfo.teamId}</span>
               <span className="px-3 py-1 bg-surface border border-border rounded-lg text-sm font-semibold text-white">{memberInfo.sectionId}</span>
               <span className="px-3 py-1 bg-surface border border-border rounded-lg text-sm font-semibold text-white">{memberInfo.deptId}</span>
+            </div>
+            
+            <div className="flex flex-wrap gap-3 mt-4">
+              {latest.leetcodeUrl && (
+                <a href={latest.leetcodeUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 bg-[#FFA500]/10 border border-[#FFA500]/20 rounded-lg text-sm font-medium text-[#FFA500] hover:bg-[#FFA500]/20 transition-colors">
+                  <span className="w-2 h-2 rounded-full bg-[#FFA500]"></span> LeetCode
+                </a>
+              )}
+              {latest.skillrackUrl && (
+                <a href={latest.skillrackUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 bg-[#00D4AA]/10 border border-[#00D4AA]/20 rounded-lg text-sm font-medium text-[#00D4AA] hover:bg-[#00D4AA]/20 transition-colors">
+                  <span className="w-2 h-2 rounded-full bg-[#00D4AA]"></span> SkillRack
+                </a>
+              )}
+              {latest.codechefUrl && (
+                <a href={latest.codechefUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 bg-[#D4957A]/10 border border-[#D4957A]/20 rounded-lg text-sm font-medium text-[#D4957A] hover:bg-[#D4957A]/20 transition-colors">
+                  <span className="w-2 h-2 rounded-full bg-[#D4957A]"></span> CodeChef
+                </a>
+              )}
+              {latest.hackerrankUrl && (
+                <a href={latest.hackerrankUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 bg-[#00EA64]/10 border border-[#00EA64]/20 rounded-lg text-sm font-medium text-[#00EA64] hover:bg-[#00EA64]/20 transition-colors">
+                  <span className="w-2 h-2 rounded-full bg-[#00EA64]"></span> HackerRank
+                </a>
+              )}
+              {latest.githubUrl && (
+                <a href={latest.githubUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-400/10 border border-gray-400/20 rounded-lg text-sm font-medium text-gray-300 hover:bg-gray-400/20 transition-colors">
+                  <span className="w-2 h-2 rounded-full bg-gray-400"></span> GitHub
+                </a>
+              )}
             </div>
           </div>
           <div className="glass-card p-6 rounded-xl border-white/5 text-right flex flex-col items-end shrink-0 min-w-[200px]">
@@ -204,10 +232,38 @@ const IndividualDashboard: React.FC = () => {
                 </div>
                 <div className="sm:text-right flex flex-wrap gap-2 sm:gap-0 sm:block">
                   <div className="flex items-center gap-3 text-xs font-medium text-textMuted">
-                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#FFA500]"></span> LC: {record.leetcodeTotal}</span>
-                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#00D4AA]"></span> SR: {record.skillrackTotal}</span>
-                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#D4957A]"></span> CC: {record.codechefTotal}</span>
-                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#00EA64]"></span> HR: {record.hackerrankTotal}</span>
+                    <span className="flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-[#FFA500]"></span> 
+                      {record.leetcodeUrl ? (
+                         <a href={record.leetcodeUrl} target="_blank" rel="noopener noreferrer" className="hover:text-blue-400 hover:underline">LC: {record.leetcodeTotal}</a>
+                      ) : (
+                         `LC: ${record.leetcodeTotal}`
+                      )}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-[#00D4AA]"></span> 
+                      {record.skillrackUrl ? (
+                         <a href={record.skillrackUrl} target="_blank" rel="noopener noreferrer" className="hover:text-blue-400 hover:underline">SR: {record.skillrackTotal}</a>
+                      ) : (
+                         `SR: ${record.skillrackTotal}`
+                      )}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-[#D4957A]"></span> 
+                      {record.codechefUrl ? (
+                         <a href={record.codechefUrl} target="_blank" rel="noopener noreferrer" className="hover:text-blue-400 hover:underline">CC: {record.codechefTotal}</a>
+                      ) : (
+                         `CC: ${record.codechefTotal}`
+                      )}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-[#00EA64]"></span> 
+                      {record.hackerrankUrl ? (
+                         <a href={record.hackerrankUrl} target="_blank" rel="noopener noreferrer" className="hover:text-blue-400 hover:underline">HR: {record.hackerrankTotal}</a>
+                      ) : (
+                         `HR: ${record.hackerrankTotal}`
+                      )}
+                    </span>
                   </div>
                 </div>
               </div>

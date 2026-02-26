@@ -1,6 +1,8 @@
 import os
 import re
 import time
+import asyncio
+import aiohttp
 import smtplib
 import requests
 from random import uniform
@@ -193,8 +195,8 @@ Keep coding! ✨
         msg['From'] = from_email
         msg['To'] = to_email
         msg['Subject'] = subject
-        msg.attach(MIMEText(text, 'plain'))
-        msg.attach(MIMEText(html, 'html'))
+        msg.attach(MIMEText(text, 'plain', 'utf-8'))
+        msg.attach(MIMEText(html, 'html', 'utf-8'))
 
         server = smtplib.SMTP('smtp.gmail.com', 587)
         server.starttls()
@@ -206,47 +208,48 @@ Keep coding! ✨
         print(f"⚠ Failed to send email to {to_email}: {e}")
 
 # ===================== SCRAPING HELPERS =====================
-def get_codechef_solved(username):
+async def get_codechef_solved(session, username):
     if not username: return 0
     try:
         if 'codechef.com' in username:
             username = username.rstrip('/').split('/')[-1]
-        r = requests.get(f"https://www.codechef.com/users/{username}", headers=HEADERS, timeout=10)
-        r.raise_for_status()
-        soup = BeautifulSoup(r.text, "html.parser")
-        section = soup.find("section", class_="rating-data-section problems-solved")
-        if section:
-            for tag in section.find_all("h3"):
-                m = re.search(r"Total\s+Problems\s+Solved:\s*(\d+)", tag.get_text(strip=True), re.IGNORECASE)
-                if m:
-                    return int(m.group(1))
-            # fallback: first number in parentheses
-            text = section.get_text()
-            nums = re.findall(r'\((\d+)\)', text)
-            if nums: return int(nums[0])
+        async with session.get(f"https://www.codechef.com/users/{username}", headers=HEADERS, timeout=10) as r:
+            r.raise_for_status()
+            text = await r.text()
+            soup = BeautifulSoup(text, "html.parser")
+            section = soup.find("section", class_="rating-data-section problems-solved")
+            if section:
+                for tag in section.find_all("h3"):
+                    m = re.search(r"Total\s+Problems\s+Solved:\s*(\d+)", tag.get_text(strip=True), re.IGNORECASE)
+                    if m:
+                        return int(m.group(1))
+                # fallback: first number in parentheses
+                text_sec = section.get_text()
+                nums = re.findall(r'\((\d+)\)', text_sec)
+                if nums: return int(nums[0])
     except Exception as e:
         print(f"⚠ Error scraping CodeChef ({username}): {e}")
     return 0
 
-def get_hackerrank_solved(username):
+async def get_hackerrank_solved(session, username):
     if not username: return 0
     try:
         if 'hackerrank.com' in username:
             username = username.rstrip('/').split('/')[-1]
-        r = requests.get("https://www.hackerrank.com/rest/hackers/{}/badges".format(username),
-                         headers=HEADERS, params={'limit':'1000','filter':'categories:problem_solving'}, timeout=10)
-        r.raise_for_status()
-        data = r.json()
-        solved = 0
-        for badge in data.get('models', []):
-            if 'solved' in badge and badge['solved']:
-                solved += badge['solved']
-        return solved
+        async with session.get("https://www.hackerrank.com/rest/hackers/{}/badges".format(username),
+                         headers=HEADERS, params={'limit':'1000','filter':'categories:problem_solving'}, timeout=10) as r:
+            r.raise_for_status()
+            data = await r.json()
+            solved = 0
+            for badge in data.get('models', []):
+                if 'solved' in badge and badge['solved']:
+                    solved += badge['solved']
+            return solved
     except Exception as e:
         print(f"⚠ Error scraping HackerRank ({username}): {e}")
     return 0
 
-def get_github_repo_count(username):
+async def get_github_repo_count(session, username):
     if not username: return 0
     try:
         if 'github.com' in username:
@@ -254,9 +257,10 @@ def get_github_repo_count(username):
         headers = HEADERS.copy()
         if GITHUB_TOKEN:
             headers['Authorization'] = f'Bearer {GITHUB_TOKEN}'
-        r = requests.get(f"https://api.github.com/users/{username}/repos", headers=headers, timeout=10)
-        if r.status_code == 200:
-            return len(r.json())
+        async with session.get(f"https://api.github.com/users/{username}/repos", headers=headers, timeout=10) as r:
+            if r.status == 200:
+                data = await r.json()
+                return len(data)
     except Exception as e:
         print(f"⚠ Error scraping GitHub ({username}): {e}")
     return 0
@@ -268,7 +272,7 @@ def extract_leetcode_username(url):
     m = re.search(r"/u/([^/]+)/?", url)
     return m.group(1) if m else None
 
-def get_leetcode_total(profile_url):
+async def get_leetcode_total(session, profile_url):
     uname = extract_leetcode_username(profile_url)
     if not uname: return 0
 
@@ -283,42 +287,46 @@ def get_leetcode_total(profile_url):
     """
     payload = {"query": query, "variables": {"username": uname}}
     try:
-        r = requests.post("https://leetcode.com/graphql", json=payload,
-                          headers={"Content-Type": "application/json"}, timeout=10)
-        r.raise_for_status()
-        arr = (r.json().get("data", {}).get("matchedUser", {})
-               .get("submitStats", {}).get("acSubmissionNum", []))
-        for entry in arr:
-            if entry.get("difficulty", "").lower() == "all":
-                return entry.get("count", 0)
+        async with session.post("https://leetcode.com/graphql", json=payload,
+                          headers={"Content-Type": "application/json"}, timeout=10) as r:
+            r.raise_for_status()
+            data = await r.json()
+            arr = (data.get("data", {}).get("matchedUser", {})
+                   .get("submitStats", {}).get("acSubmissionNum", []))
+            for entry in arr:
+                if entry.get("difficulty", "").lower() == "all":
+                    return entry.get("count", 0)
     except Exception:
         pass
 
     # fallback scrape
     try:
-        r2 = requests.get(f"https://leetcode.com/u/{uname}/", headers=HEADERS, timeout=10)
-        r2.raise_for_status()
-        m = re.search(r'"totalSolved":\s*(\d+)', r2.text)
-        if m: return int(m.group(1))
+        async with session.get(f"https://leetcode.com/u/{uname}/", headers=HEADERS, timeout=10) as r2:
+            r2.raise_for_status()
+            text = await r2.text()
+            m = re.search(r'"totalSolved":\s*(\d+)', text)
+            if m: return int(m.group(1))
     except Exception:
         pass
     return 0
 
-def get_skillrack_total(url, retries=2, delay=2):
+async def get_skillrack_total(session, url, retries=2, delay=2):
     if not url:
         return 0
     for _ in range(retries+1):
         try:
-            time.sleep(delay)
-            r = requests.get(url, headers=HEADERS, timeout=10)
-            if r.status_code == 200:
-                soup = BeautifulSoup(r.text, "html.parser")
-                for stat in soup.select("div.ui.six.small.statistics > div.statistic"):
-                    lbl = stat.find("div", class_="label")
-                    if lbl and lbl.get_text(strip=True) == "PROGRAMS SOLVED":
-                        val = stat.find("div", class_="value")
-                        nums = re.findall(r"\d+", val.get_text()) if val else []
-                        return int(nums[0]) if nums else 0
+            if delay > 0:
+                await asyncio.sleep(delay)
+            async with session.get(url, headers=HEADERS, timeout=10) as r:
+                if r.status == 200:
+                    text = await r.text()
+                    soup = BeautifulSoup(text, "html.parser")
+                    for stat in soup.select("div.ui.six.small.statistics > div.statistic"):
+                        lbl = stat.find("div", class_="label")
+                        if lbl and lbl.get_text(strip=True) == "PROGRAMS SOLVED":
+                            val = stat.find("div", class_="value")
+                            nums = re.findall(r"\d+", val.get_text()) if val else []
+                            return int(nums[0]) if nums else 0
         except Exception:
             pass
     return 0
@@ -410,9 +418,121 @@ def sync_members_from_sheet():
         return 0
 
 # ===================== MAIN SCRAPING =====================
-def scrape_all_teams():
+def collect_members():
+    members_list = []
+    departments = db.collection('departments').stream()
+    for dept_doc in departments:
+        sections = dept_doc.reference.collection('sections').stream()
+        for section_doc in sections:
+            teams = section_doc.reference.collection('teams').stream()
+            for team_doc in teams:
+                members = team_doc.reference.collection('members').stream()
+                for member_doc in members:
+                    members_list.append(member_doc)
+    return members_list
+
+async def scrape_member(session, semaphore, member_doc, from_email, app_password):
+    async with semaphore:
+        member_data = member_doc.to_dict()
+        member_id   = member_doc.id
+        name        = member_data.get('name', member_id)
+        email       = member_data.get('email', '')
+        profiles    = member_data.get('profiles', {})
+
+        print(f"      👤 Scraping {name}...")
+
+        lc_total = await get_leetcode_total(session, profiles.get('leetcode_url', ''))
+        await asyncio.sleep(1)
+        sr_total = await get_skillrack_total(session, profiles.get('skillrack_url', ''))
+        await asyncio.sleep(1)
+        cc_total = await get_codechef_solved(session, profiles.get('codechef_url', ''))
+        await asyncio.sleep(1)
+        hr_total = await get_hackerrank_solved(session, profiles.get('hackerrank_url', ''))
+        await asyncio.sleep(1)
+        gh_repos = await get_github_repo_count(session, profiles.get('github_url', ''))
+
+        print(f"         LC: {lc_total} | SR: {sr_total} | CC: {cc_total} | HR: {hr_total} | GH: {gh_repos}")
+
+        today = datetime.now().strftime("%Y-%m-%d")
+
+        lc_diff = sr_diff = cc_diff = hr_diff = gh_diff = 0
+        try:
+            def fetch_last_record():
+                docs = (
+                    member_doc.reference
+                    .collection('daily_totals')
+                    .order_by('date', direction=firestore.Query.DESCENDING)
+                    .limit(1)
+                    .stream()
+                )
+                
+                for doc in docs:
+                    data = doc.to_dict()
+                    # If today already exists, skip it and fetch previous
+                    if data.get("date") != today:
+                        return data
+                
+                return {}
+            
+            y_data = await asyncio.to_thread(fetch_last_record)
+            
+            if y_data:
+                lc_diff = max(0, lc_total - y_data.get('leetcode_total', 0))
+                sr_diff = max(0, sr_total - y_data.get('skillrack_total', 0))
+                cc_diff = max(0, cc_total - y_data.get('codechef_total', 0))
+                hr_diff = max(0, hr_total - y_data.get('hackerrank_total', 0))
+                gh_diff = max(0, gh_repos - y_data.get('github_repos', 0))
+            else:
+                lc_diff = 0
+                sr_diff = 0
+                cc_diff = 0
+                hr_diff = 0
+                gh_diff = 0
+        except Exception:
+            pass
+
+        daily_data = {
+            'date': today,
+            'leetcode_total': lc_total,
+            'skillrack_total': sr_total,
+            'codechef_total': cc_total,
+            'hackerrank_total': hr_total,
+            'github_repos': gh_repos,
+            'leetcode_daily_increase': lc_diff,
+            'skillrack_daily_increase': sr_diff,
+            'codechef_daily_increase': cc_diff,
+            'hackerrank_daily_increase': hr_diff,
+            'github_daily_increase': gh_diff,
+            'scraped_at': datetime.now()
+        }
+
+        def save_and_email():
+            try:
+                member_doc.reference.collection('daily_totals').document(today).set(daily_data)
+                
+                if email and from_email and app_password:
+                    subject = f"🚀 Your Daily Coding Report - {datetime.now().strftime('%b %d')}"
+                    send_email_summary(email, subject, "", from_email, app_password, name, daily_data)
+            except Exception as e:
+                print(f"⚠ Error saving/emailing for {name}: {e}")
+
+        await asyncio.to_thread(save_and_email)
+        print(f"         ✅ Saved to Firebase for {name}")
+
+async def scrape_all_async(all_members, from_email, app_password):
+    connector = aiohttp.TCPConnector(limit=15)
+    semaphore = asyncio.Semaphore(15)
+    
+    async with aiohttp.ClientSession(connector=connector) as session:
+        tasks = [
+            scrape_member(session, semaphore, member_doc, from_email, app_password)
+            for member_doc in all_members
+        ]
+        await asyncio.gather(*tasks)
+
+def main():
     print("\n" + "="*60)
-    print("🚀 STARTING AUTOMATED SCRAPING")
+    print("🚀 STARTING AUTOMATED SCRAPING (ASYNC)")
     print("="*60 + "\n")
 
     # 1) Sync members
@@ -422,104 +542,16 @@ def scrape_all_teams():
     from_email = GMAIL_FROM_EMAIL
     app_password = GMAIL_APP_PASSWORD
 
-    # 3) Walk hierarchy and scrape
-    departments = db.collection('departments').stream()
-    total_members_scraped = 0
+    # 3) Collect members
+    all_members = collect_members()
+    print(f"👥 Found {len(all_members)} members to scrape.")
 
-    for dept_doc in departments:
-        dept_id = dept_doc.id
-        print(f"\n📚 Department: {dept_id}")
-
-        sections = dept_doc.reference.collection('sections').stream()
-        for section_doc in sections:
-            section_id = section_doc.id
-            print(f"  📂 Section: {section_id}")
-
-            teams = section_doc.reference.collection('teams').stream()
-            for team_doc in teams:
-                team_id = team_doc.id
-                print(f"    👥 Team: {team_id}")
-
-                members = team_doc.reference.collection('members').stream()
-                for member_doc in members:
-                    member_data = member_doc.to_dict()
-                    member_id   = member_doc.id
-                    name        = member_data.get('name', member_id)
-                    email       = member_data.get('email', '')
-                    profiles    = member_data.get('profiles', {})
-
-                    print(f"      👤 Scraping {name}...")
-
-                    lc_total = get_leetcode_total(profiles.get('leetcode_url', ''));    time.sleep(uniform(1.0, 2.0))
-                    sr_total = get_skillrack_total(profiles.get('skillrack_url', '')); time.sleep(uniform(1.0, 2.0))
-                    cc_total = get_codechef_solved(profiles.get('codechef_url', ''));  time.sleep(uniform(1.0, 2.0))
-                    hr_total = get_hackerrank_solved(profiles.get('hackerrank_url', '')); time.sleep(uniform(1.0, 2.0))
-                    gh_repos = get_github_repo_count(profiles.get('github_url', ''))
-
-                    print(f"         LC: {lc_total} | SR: {sr_total} | CC: {cc_total} | HR: {hr_total} | GH: {gh_repos}")
-
-                    today = datetime.now().strftime("%Y-%m-%d")
-
-                    lc_diff = sr_diff = cc_diff = hr_diff = gh_diff = 0
-                    try:
-                        docs = (
-                            member_doc.reference
-                            .collection('daily_totals')
-                            .order_by('date', direction=firestore.Query.DESCENDING)
-                            .limit(1)
-                            .stream()
-                        )
-                        
-                        y_data = {}
-                        for doc in docs:
-                            data = doc.to_dict()
-                            # If today already exists, skip it and fetch previous
-                            if data.get("date") != today:
-                                y_data = data
-                                break
-
-                        if y_data:
-                            lc_diff = max(0, lc_total - y_data.get('leetcode_total', 0))
-                            sr_diff = max(0, sr_total - y_data.get('skillrack_total', 0))
-                            cc_diff = max(0, cc_total - y_data.get('codechef_total', 0))
-                            hr_diff = max(0, hr_total - y_data.get('hackerrank_total', 0))
-                            gh_diff = max(0, gh_repos - y_data.get('github_repos', 0))
-                        else:
-                            lc_diff = 0
-                            sr_diff = 0
-                            cc_diff = 0
-                            hr_diff = 0
-                            gh_diff = 0
-                    except Exception:
-                        pass
-
-                    daily_data = {
-                        'date': today,
-                        'leetcode_total': lc_total,
-                        'skillrack_total': sr_total,
-                        'codechef_total': cc_total,
-                        'hackerrank_total': hr_total,
-                        'github_repos': gh_repos,
-                        'leetcode_daily_increase': lc_diff,
-                        'skillrack_daily_increase': sr_diff,
-                        'codechef_daily_increase': cc_diff,
-                        'hackerrank_daily_increase': hr_diff,
-                        'github_daily_increase': gh_diff,
-                        'scraped_at': datetime.now()
-                    }
-
-                    member_doc.reference.collection('daily_totals').document(today).set(daily_data)
-
-                    if email and from_email and app_password:
-                        subject = f"🚀 Your Daily Coding Report - {datetime.now().strftime('%b %d')}"
-                        send_email_summary(email, subject, "", from_email, app_password, name, daily_data)
-
-                    total_members_scraped += 1
-                    print(f"         ✅ Saved to Firebase")
+    # 4) Run async scraping
+    asyncio.run(scrape_all_async(all_members, from_email, app_password))
 
     print("\n" + "="*60)
-    print(f"🎉 SCRAPING COMPLETE! Processed {total_members_scraped} members")
+    print(f"🎉 SCRAPING COMPLETE! Processed {len(all_members)} members")
     print("="*60 + "\n")
 
 if __name__ == "__main__":
-    scrape_all_teams()
+    main()

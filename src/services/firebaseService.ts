@@ -171,7 +171,12 @@ export class FirebaseService {
       totalDailyIncrease: (dailyData.leetcode_daily_increase || 0) + (dailyData.skillrack_daily_increase || 0) + (dailyData.codechef_daily_increase || 0) + (dailyData.hackerrank_daily_increase || 0),
       assignedTeamLead: memberData.assigned_team_lead || '',
       isTeamLead: memberData.is_team_lead || false,
-      assignedBatch: memberData.assigned_batch || ''
+      assignedBatch: memberData.assigned_batch || '',
+      leetcodeUrl: memberData.profiles?.leetcode_url || '',
+      skillrackUrl: memberData.profiles?.skillrack_url || '',
+      codechefUrl: memberData.profiles?.codechef_url || '',
+      hackerrankUrl: memberData.profiles?.hackerrank_url || '',
+      githubUrl: memberData.profiles?.github_url || ''
     };
   }
 }

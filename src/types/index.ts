@@ -22,6 +22,11 @@ export interface DailyTotal {
   assignedTeamLead?: string;
   isTeamLead?: boolean;
   assignedBatch?: string;
+  leetcodeUrl?: string;
+  skillrackUrl?: string;
+  codechefUrl?: string;
+  hackerrankUrl?: string;
+  githubUrl?: string;
 }
 
 export interface Team {
