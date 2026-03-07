@@ -13,7 +13,7 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   const navigate = useNavigate();
   const { addToast } = useToast();
-  const { theme, setTheme, actualTheme } = useTheme();
+  const { setTheme, actualTheme } = useTheme();
   const { searchTerm: query, setSearchTerm: setQuery, results: members } = useSearch('members');
   const { setSearchTerm: setTeamQuery, results: teams } = useSearch('teams');
 
