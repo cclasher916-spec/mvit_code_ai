@@ -5,6 +5,48 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --color-background: 10, 15, 28;
+    --color-surface: 18, 27, 46;
+    --color-border: 255, 255, 255, 0.08;
+    /* Fallback syntax supported by tailwind rgba wrapper via plugin/setup */
+    --color-subtle: 255, 255, 255, 0.05;
+    --color-text-main: 255, 255, 255;
+    --color-text-muted: 148, 163, 184;
+    --color-adaptive-white: 255, 255, 255;
+    --color-brand-400: 56, 189, 248;
+    --color-brand-500: 14, 165, 233;
+    --color-brand-600: 2, 132, 199;
+    --color-bg-grad-1: #1a2340;
+    --color-bg-grad-2: #0a0f1c;
+
+    /* Normalize rgba values to work without <alpha-value> if needed in border overrides */
+    --color-border: 255, 255, 255;
+    --color-subtle: 255, 255, 255;
+  }
+
+  .light {
+    --color-background: 248, 250, 252;
+    --color-surface: 255, 255, 255;
+    --color-border: 0, 0, 0;
+    /* Tailwind applies 0.08 alpha to this */
+    --color-subtle: 0, 0, 0;
+    --color-text-main: 15, 23, 42;
+    --color-text-muted: 100, 116, 139;
+    --color-adaptive-white: 15, 23, 42;
+    --color-brand-400: 14, 165, 233;
+    /* Darker blue better for white bg */
+    --color-brand-500: 2, 132, 199;
+    --color-brand-600: 3, 105, 161;
+    --color-bg-grad-1: #f1f5f9;
+    --color-bg-grad-2: #f8fafc;
+  }
+
+  /* Make borders visible on light mode */
+  .light * {
+    border-color: rgba(var(--color-text-main), 0.1);
+  }
+
   body {
     @apply bg-background text-textMain antialiased selection:bg-brand-500/30 selection:text-brand-400 font-sans;
     margin: 0;
@@ -12,11 +54,19 @@
     min-height: 100vh;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-display tracking-tight text-textMain;
   }
-  
-  p, span, div, a {
+
+  p,
+  span,
+  div,
+  a {
     @apply font-sans;
   }
 }
@@ -45,11 +95,12 @@
 
 /* Utility to hide scrollbar but keep functionality */
 .scrollbar-hide::-webkit-scrollbar {
-    display: none;
+  display: none;
 }
+
 .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 /* Base custom utility classes */

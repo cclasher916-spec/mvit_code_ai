@@ -11,16 +11,17 @@ export default {
         'display': ['Outfit', 'sans-serif'],
       },
       colors: {
-        background: '#0a0f1c', // Deep modern dark mode
-        surface: '#121b2e',
-        border: 'rgba(255,255,255,0.08)',
-        subtle: 'rgba(255,255,255,0.05)',
-        textMain: '#ffffff',
-        textMuted: '#94a3b8',
+        background: 'rgba(var(--color-background), <alpha-value>)',
+        surface: 'rgba(var(--color-surface), <alpha-value>)',
+        border: 'rgba(var(--color-border), <alpha-value>)',
+        subtle: 'rgba(var(--color-subtle), <alpha-value>)',
+        textMain: 'rgba(var(--color-text-main), <alpha-value>)',
+        textMuted: 'rgba(var(--color-text-muted), <alpha-value>)',
+        white: 'rgba(var(--color-adaptive-white), <alpha-value>)',
         brand: {
-          400: '#38bdf8',
-          500: '#0ea5e9',
-          600: '#0284c7',
+          400: 'rgba(var(--color-brand-400), <alpha-value>)',
+          500: 'rgba(var(--color-brand-500), <alpha-value>)',
+          600: 'rgba(var(--color-brand-600), <alpha-value>)',
         },
         accent: {
           purple: '#8b5cf6',
@@ -30,9 +31,9 @@ export default {
         }
       },
       backgroundImage: {
-        'gradient-main': 'radial-gradient(circle at top right, #1a2340 0%, #0a0f1c 100%)',
-        'gradient-hero': 'linear-gradient(135deg, #38bdf8 0%, #8b5cf6 100%)',
-        'gradient-glass': 'linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0) 100%)',
+        'gradient-main': 'radial-gradient(circle at top right, var(--color-bg-grad-1) 0%, var(--color-bg-grad-2) 100%)',
+        'gradient-hero': 'linear-gradient(135deg, rgba(var(--color-brand-400), 1) 0%, #8b5cf6 100%)',
+        'gradient-glass': 'linear-gradient(180deg, rgba(var(--color-text-main), 0.03) 0%, rgba(var(--color-text-main), 0) 100%)',
       },
       backdropBlur: {
         xs: '2px',

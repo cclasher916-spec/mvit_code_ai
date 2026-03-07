@@ -4,6 +4,7 @@ import Card, { CardHeader, CardTitle, CardContent } from '../components/ui/Card'
 import { Bell, ChevronRight, Database, Palette, Download, Upload, RefreshCw, Settings as SettingsIcon, Save, RotateCcw, FileJson, CheckCircle2, Trash2 } from 'lucide-react';
 import { useToast } from '../components/ui/Toaster';
 import { useData } from '../contexts/DataContext';
+import { useTheme } from '../contexts/ThemeContext';
 
 const SETTINGS_KEY = 'coding-tracker-settings';
 
@@ -14,7 +15,6 @@ interface AppSettings {
     achievementAlerts: boolean;
     systemNotifications: boolean;
   };
-  theme: string;
   refreshInterval: string;
 }
 
@@ -25,7 +25,6 @@ const DEFAULT_SETTINGS: AppSettings = {
     achievementAlerts: false,
     systemNotifications: true
   },
-  theme: 'dark',
   refreshInterval: '30'
 };
 
@@ -44,6 +43,7 @@ function saveSettings(settings: AppSettings) {
 const Settings: React.FC = () => {
   const { addToast } = useToast();
   const { data, hierarchy, refreshData } = useData();
+  const { theme: appTheme, setTheme: setAppTheme } = useTheme();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [settings, setSettings] = useState<AppSettings>(loadSettings);
@@ -109,8 +109,10 @@ const Settings: React.FC = () => {
 
         // If the import contains settings, apply them
         if (imported.settings) {
-          setSettings({ ...DEFAULT_SETTINGS, ...imported.settings });
-          saveSettings({ ...DEFAULT_SETTINGS, ...imported.settings });
+          const { theme, ...restSettings } = imported.settings;
+          setSettings({ ...DEFAULT_SETTINGS, ...restSettings });
+          saveSettings({ ...DEFAULT_SETTINGS, ...restSettings });
+          if (theme) setAppTheme(theme);
         }
 
         addToast({
@@ -241,15 +243,15 @@ const Settings: React.FC = () => {
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-textMuted mb-3">Theme Preference</label>
               <div className="grid grid-cols-3 gap-3">
-                {['light', 'dark', 'auto'].map((themeOption) => (
-                  <button key={themeOption} onClick={() => setSettings(prev => ({ ...prev, theme: themeOption }))} className={`p-4 text-sm font-semibold rounded-xl border transition-all capitalize flex flex-col items-center justify-center gap-2 ${settings.theme === themeOption ? 'bg-purple-500/20 text-purple-400 border-purple-500/50 shadow-inner' : 'bg-surface/50 text-textMuted border-border/50 hover:bg-white/5 hover:text-white'}`}>
-                    <div className={`w-4 h-4 rounded-full border-2 ${settings.theme === themeOption ? 'border-purple-400 bg-purple-400' : 'border-textMuted bg-transparent'}`}></div>
+                {(['light', 'dark', 'auto'] as const).map((themeOption) => (
+                  <button key={themeOption} onClick={() => setAppTheme(themeOption)} className={`p-4 text-sm font-semibold rounded-xl border transition-all capitalize flex flex-col items-center justify-center gap-2 ${appTheme === themeOption ? 'bg-purple-500/20 text-purple-400 border-purple-500/50 shadow-inner' : 'bg-surface/50 text-textMuted border-border/50 hover:bg-white/5 hover:text-white'}`}>
+                    <div className={`w-4 h-4 rounded-full border-2 ${appTheme === themeOption ? 'border-purple-400 bg-purple-400' : 'border-textMuted bg-transparent'}`}></div>
                     {themeOption}
                   </button>
                 ))}
               </div>
               <p className="text-sm text-textMuted mt-3 flex items-center gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-purple-500"></div> Currently using <span className="text-white font-medium capitalize">{settings.theme}</span> theme
+                <div className="w-1.5 h-1.5 rounded-full bg-purple-500"></div> Currently using <span className="text-white font-medium capitalize">{appTheme}</span> theme
               </p>
             </div>
           </div>

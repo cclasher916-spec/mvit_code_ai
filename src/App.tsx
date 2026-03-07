@@ -18,43 +18,49 @@ const IndividualDashboard = React.lazy(() => import('./pages/IndividualDashboard
 const Repositories = React.lazy(() => import('./pages/Repositories'));
 
 const LoadingSpinner = () => (
-  <div className="flex h-screen items-center justify-center">
+  <div className="flex w-full h-full min-h-[50vh] items-center justify-center">
     <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
   </div>
 );
 
 import { DataProvider } from './contexts/DataContext';
+import ErrorBoundary from './components/ui/ErrorBoundary';
+import { ThemeProvider } from './contexts/ThemeContext';
 
 // ... other imports
 
 function App() {
   return (
     <ToastProvider>
-      <FirebaseProvider>
-        <DataProvider>
-          <Router>
-            <div className="min-h-screen bg-gradient-main">
-              <Layout>
-                <Suspense fallback={<LoadingSpinner />}>
-                  <Routes>
-                    <Route path="/" element={<Dashboard />} />
-                    <Route path="/team/:deptId/:sectionId/:teamId" element={<TeamView />} />
-                    <Route path="/section/:deptId/:sectionId" element={<SectionView />} />
-                    <Route path="/department/:deptId" element={<DepartmentView />} />
-                    <Route path="/all-departments" element={<AllDepartments />} />
-                    <Route path="/analytics" element={<Analytics />} />
-                    <Route path="/repositories" element={<Repositories />} />
-                    <Route path="/teams" element={<Teams />} />
-                    <Route path="/leaderboard" element={<Leaderboard />} />
-                    <Route path="/settings" element={<Settings />} />
-                    <Route path="/individual/:memberId" element={<IndividualDashboard />} />
-                  </Routes>
-                </Suspense>
-              </Layout>
-            </div>
-          </Router>
-        </DataProvider>
-      </FirebaseProvider>
+      <ThemeProvider>
+        <FirebaseProvider>
+          <DataProvider>
+            <Router>
+              <div className="min-h-screen bg-gradient-main text-textMain transition-colors duration-300">
+                <Layout>
+                  <ErrorBoundary>
+                    <Suspense fallback={<LoadingSpinner />}>
+                      <Routes>
+                        <Route path="/" element={<Dashboard />} />
+                        <Route path="/team/:deptId/:sectionId/:teamId" element={<TeamView />} />
+                        <Route path="/section/:deptId/:sectionId" element={<SectionView />} />
+                        <Route path="/department/:deptId" element={<DepartmentView />} />
+                        <Route path="/all-departments" element={<AllDepartments />} />
+                        <Route path="/analytics" element={<Analytics />} />
+                        <Route path="/repositories" element={<Repositories />} />
+                        <Route path="/teams" element={<Teams />} />
+                        <Route path="/leaderboard" element={<Leaderboard />} />
+                        <Route path="/settings" element={<Settings />} />
+                        <Route path="/individual/:memberId" element={<IndividualDashboard />} />
+                      </Routes>
+                    </Suspense>
+                  </ErrorBoundary>
+                </Layout>
+              </div>
+            </Router>
+          </DataProvider>
+        </FirebaseProvider>
+      </ThemeProvider>
     </ToastProvider>
   );
 }

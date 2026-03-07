@@ -21,18 +21,17 @@ const Dashboard: React.FC = () => {
     return deptOk && batchOk;
   });
 
+  const departments = hierarchy ? Object.keys(hierarchy) : [];
+  const totalMembersCount = React.useMemo(() => new Set((data || []).map(d => d?.memberId).filter(Boolean)).size, [data]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <LoadingSpinner size="lg" />
-        <span className="ml-3 text-gray-600">Loading dashboard...</span>
+        <span className="ml-3 text-textMuted text-lg font-medium">Loading dashboard...</span>
       </div>
     );
   }
-
-  const departments = hierarchy ? Object.keys(hierarchy) : [];
-
-  const totalMembersCount = React.useMemo(() => new Set((data || []).map(d => d?.memberId).filter(Boolean)).size, [data]);
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 animate-fade-in relative">

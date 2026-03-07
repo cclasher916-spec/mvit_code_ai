@@ -13,22 +13,19 @@ from email.mime.text import MIMEText
 import firebase_admin
 from firebase_admin import credentials, firestore
 
-import google.generativeai as genai
 from read_google_sheet import read_google_sheet
 
 # ===================== ENV & SECRETS =====================
 load_dotenv()
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")  # set in .env
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")  # set in .env
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "")  # optional for higher GitHub rate limits
 GMAIL_FROM_EMAIL = os.getenv("GMAIL_FROM_EMAIL", "")  # e.g., 'bytebreakers04@gmail.com'
 GMAIL_APP_PASSWORD = os.getenv("GMAIL_APP_PASSWORD", "")  # Gmail app password
 FIREBASE_CREDENTIALS_PATH = os.getenv("FIREBASE_CREDENTIALS_PATH", "coding-team-profiles-2b0b4df65b4a.json")
 
-if not GEMINI_API_KEY:
-    print("⚠ GEMINI_API_KEY not set; AI motivation will use fallbacks.")
-else:
-    genai.configure(api_key=GEMINI_API_KEY)
+if not GROQ_API_KEY:
+    print("⚠ GROQ_API_KEY not set; AI motivation will use fallbacks.")
 
 # ===================== FIREBASE =====================
 try:
@@ -50,10 +47,9 @@ def get_personalized_motivation(name, daily_data):
         daily_data.get('hackerrank_daily_increase', 0) +
         daily_data.get('github_daily_increase', 0)
     )
-    if not GEMINI_API_KEY:
+    if not GROQ_API_KEY:
         return _fallback_motivation(name, total_solved_today)
     try:
-        model = genai.GenerativeModel('gemini-2.0-flash-exp')
         prompt = (
             f"Generate a short, personalized motivational message (<=50 words) for {name}, "
             f"who solved {total_solved_today} problems today.\n"
@@ -64,10 +60,23 @@ def get_personalized_motivation(name, daily_data):
             f"GitHub:+{daily_data.get('github_daily_increase', 0)}.\n"
             f"Be specific, encouraging, and authentic with emojis. If 0, nudge gently."
         )
-        resp = model.generate_content(prompt)
-        return (resp.text or "").strip() or _fallback_motivation(name, total_solved_today)
+        payload = {
+            "model": "llama3-8b-8192",
+            "messages": [{"role": "user", "content": prompt}],
+            "max_tokens": 60,
+            "temperature": 0.7
+        }
+        headers = {
+            "Authorization": f"Bearer {GROQ_API_KEY}",
+            "Content-Type": "application/json"
+        }
+        resp = requests.post("https://api.groq.com/openai/v1/chat/completions", json=payload, headers=headers, timeout=10)
+        resp.raise_for_status()
+        
+        reply = resp.json().get("choices", [{}])[0].get("message", {}).get("content", "")
+        return reply.strip() or _fallback_motivation(name, total_solved_today)
     except Exception as e:
-        print(f"⚠ Gemini API error: {e}")
+        print(f"⚠ Groq API error: {e}")
         return _fallback_motivation(name, total_solved_today)
 
 def _fallback_motivation(name, total):
@@ -196,7 +205,7 @@ Keep coding! ✨
         msg.attach(MIMEText(text, 'plain'))
         msg.attach(MIMEText(html, 'html'))
 
-        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server = smtplib.SMTP('smtp-relay.brevo.com', 587)
         server.starttls()
         server.login(from_email, app_password)
         server.sendmail(from_email, to_email, msg.as_string())
@@ -231,7 +240,7 @@ def get_codechef_solved(username):
 def get_hackerrank_solved(username):
     if not username: return 0
     try:
-        if 'hackerrank.com' in username:
+        if 'hackerrank.com' in username or 'hakerrank.com' in username:
             username = username.rstrip('/').split('/')[-1]
         r = requests.get("https://www.hackerrank.com/rest/hackers/{}/badges".format(username),
                          headers=HEADERS, params={'limit':'1000','filter':'categories:problem_solving'}, timeout=10)
@@ -423,24 +432,24 @@ def scrape_all_teams():
     app_password = GMAIL_APP_PASSWORD
 
     # 3) Walk hierarchy and scrape
-    departments = db.collection('departments').stream()
+    departments = list(db.collection('departments').stream(timeout=120))
     total_members_scraped = 0
 
     for dept_doc in departments:
         dept_id = dept_doc.id
         print(f"\n📚 Department: {dept_id}")
 
-        sections = dept_doc.reference.collection('sections').stream()
+        sections = list(dept_doc.reference.collection('sections').stream(timeout=120))
         for section_doc in sections:
             section_id = section_doc.id
             print(f"  📂 Section: {section_id}")
 
-            teams = section_doc.reference.collection('teams').stream()
+            teams = list(section_doc.reference.collection('teams').stream(timeout=120))
             for team_doc in teams:
                 team_id = team_doc.id
                 print(f"    👥 Team: {team_id}")
 
-                members = team_doc.reference.collection('members').stream()
+                members = list(team_doc.reference.collection('members').stream(timeout=120))
                 for member_doc in members:
                     member_data = member_doc.to_dict()
                     member_id   = member_doc.id
@@ -449,6 +458,8 @@ def scrape_all_teams():
                     profiles    = member_data.get('profiles', {})
 
                     print(f"      👤 Scraping {name}...")
+                    
+                    time.sleep(0.2)
 
                     lc_total = get_leetcode_total(profiles.get('leetcode_url', ''));    time.sleep(uniform(1.0, 2.0))
                     sr_total = get_skillrack_total(profiles.get('skillrack_url', '')); time.sleep(uniform(1.0, 2.0))
@@ -462,12 +473,12 @@ def scrape_all_teams():
 
                     lc_diff = sr_diff = cc_diff = hr_diff = gh_diff = 0
                     try:
-                        docs = (
+                        docs = list(
                             member_doc.reference
                             .collection('daily_totals')
                             .order_by('date', direction=firestore.Query.DESCENDING)
                             .limit(1)
-                            .stream()
+                            .stream(timeout=30)
                         )
                         
                         y_data = {}
