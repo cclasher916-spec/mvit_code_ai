@@ -36,8 +36,14 @@ function loadSettings(): AppSettings {
   return DEFAULT_SETTINGS;
 }
 
-function saveSettings(settings: AppSettings) {
-  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+function saveSettings(settings: Partial<AppSettings>) {
+  try {
+    const stored = localStorage.getItem(SETTINGS_KEY);
+    const existing = stored ? JSON.parse(stored) : DEFAULT_SETTINGS;
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({ ...existing, ...settings }));
+  } catch {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({ ...DEFAULT_SETTINGS, ...settings }));
+  }
 }
 
 const Settings: React.FC = () => {

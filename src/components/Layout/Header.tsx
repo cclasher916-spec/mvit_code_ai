@@ -1,9 +1,10 @@
 import React from 'react';
-import { Menu, Bell, Search, User } from 'lucide-react';
+import { Menu, Bell, Search, User, Sun, Moon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Button from '../ui/Button';
 import { useSearch } from '../../hooks/useSearch';
 import { useToast } from '../ui/Toaster';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -12,6 +13,7 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   const navigate = useNavigate();
   const { addToast } = useToast();
+  const { theme, setTheme, actualTheme } = useTheme();
   const { searchTerm: query, setSearchTerm: setQuery, results: members } = useSearch('members');
   const { setSearchTerm: setTeamQuery, results: teams } = useSearch('teams');
 
@@ -126,7 +128,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
           </Button>
 
           {/* Notifications */}
-          <div className="relative">
+          <div className="relative hidden sm:block">
             <Button
               variant="ghost"
               size="sm"
@@ -137,6 +139,19 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
             </Button>
             <span className="absolute top-2 right-2.5 w-2 h-2 bg-accent-pink rounded-full border-2 border-surface"></span>
           </div>
+
+          <div className="h-6 w-px bg-border mx-1"></div>
+
+          {/* Theme Toggle */}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-textMuted hover:text-white hover:bg-white/10 rounded-full h-10 w-10 p-0 flex items-center justify-center transition-transform hover:rotate-12"
+            onClick={() => setTheme(actualTheme === 'dark' ? 'light' : 'dark')}
+            title="Toggle Theme"
+          >
+            {actualTheme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          </Button>
 
           <div className="h-6 w-px bg-border mx-1"></div>
 
