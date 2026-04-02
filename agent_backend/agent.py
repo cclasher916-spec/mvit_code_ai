@@ -21,11 +21,12 @@ import json
 dotenv_path = os.path.join(os.path.dirname(__file__), '../.env')
 load_dotenv(dotenv_path=dotenv_path)
 
-# --- LLM Setup ---
-llm = ChatGroq(model_name="llama-3.3-70b-versatile", temperature=0)
-
 # Memory storage (in-memory for now, could be persisted to Redis/DB later)
 memory_store = {}
+
+def get_llm():
+    """Lazily initialize LLM to keep startup fast."""
+    return ChatGroq(model_name="llama-3.3-70b-versatile", temperature=0)
 
 def get_session_history(session_id: str) -> ChatMessageHistory:
     if session_id not in memory_store:
@@ -65,9 +66,6 @@ try:
 except Exception:
     tool_list = [get_member_progress, get_top_performers, get_most_inactive_members, get_team_leaderboard, get_team_overview_analytics, assign_personalized_task, escalate_to_mentor, send_performance_report_email]
 
-# Bind tools to LLM
-llm_with_tools = llm.bind_tools(tool_list)
-
 # Map tool names to callable functions
 tool_map = {t.name: t for t in tool_list}
 
@@ -92,7 +90,11 @@ def run_agent(user_input: str, session_id: str = "default") -> dict:
     trace = []
 
     try:
-        # Step 1: LLM decides what to do (PLAN)
+        # Step 1: Initialize LLM with tools lazily
+        llm = get_llm()
+        llm_with_tools = llm.bind_tools(tool_list)
+
+        # Step 2: LLM decides what to do (PLAN)
         response = llm_with_tools.invoke(messages)
         messages.append(response)
 

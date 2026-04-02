@@ -52,7 +52,13 @@ async def continuous_autonomous_loop():
 
 @app.on_event("startup")
 async def startup_event():
-    asyncio.create_task(continuous_autonomous_loop())
+    # Wait 10 seconds before starting the heavy background loop
+    # to allow the server to fully bind to Render's port first.
+    async def delayed_start():
+        await asyncio.sleep(10)
+        asyncio.create_task(continuous_autonomous_loop())
+    
+    asyncio.create_task(delayed_start())
 
 @app.get("/")
 def read_root():
