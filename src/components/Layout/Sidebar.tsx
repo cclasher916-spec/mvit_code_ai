@@ -8,7 +8,8 @@ import {
   Settings,
   X,
   Home,
-  GitBranch
+  GitBranch,
+  Bot
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import Button from '../ui/Button';
@@ -37,6 +38,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     { name: 'Leaderboard', href: '/leaderboard', icon: Trophy },
     { name: 'Teams', href: '/teams', icon: Users },
     { name: 'Repositories', href: '/repositories', icon: GitBranch },
+    { name: 'Agent Admin', href: '/agent-admin', icon: Bot },
     { name: 'Settings', href: '/settings', icon: Settings },
   ];
 
@@ -56,8 +58,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               <Building2 className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h1 className="font-bold text-textMain text-lg tracking-tight">Coding Tracker</h1>
-              <p className="text-xs text-brand-400 font-medium tracking-wide uppercase">Workspace</p>
+              <h1 className="font-bold text-textMain text-lg tracking-tight">Autonomous Core</h1>
+              <p className="text-xs text-brand-400 font-medium tracking-wide uppercase">Skill Platform</p>
             </div>
           </div>
 

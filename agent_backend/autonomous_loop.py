@@ -16,19 +16,35 @@ def log_msg(msg):
     sys_logs.append(formatted)
     print(msg)
 
-# Add current dir to path to find tools
-sys.path.append(os.path.abspath(os.path.dirname(__file__)))
-
-from problem_bank import select_problem
-from tools.firebase_tool import (
-    get_all_members, 
-    get_member_latest_stats, 
-    update_member_elo, 
-    get_active_tasks, 
-    update_task_status
-)
-from tools.escalation_tool import escalate_to_mentor
-from tools.scraper_tool import get_user_coding_stats
+# Defer heavy tool imports to run_loop to keep module loading fast
+def get_tools():
+    from problem_bank import select_problem
+    from tools.firebase_tool import (
+        get_all_members, 
+        get_member_latest_stats, 
+        update_member_elo, 
+        get_active_tasks, 
+        update_task_status
+    )
+    from tools.escalation_tool import escalate_to_mentor
+    from tools.scraper_tool import get_user_coding_stats
+    # Handle optional calendar
+    try:
+        from tools.calendar_tool import schedule_event
+    except Exception:
+        schedule_event = None
+    
+    return {
+        "select_problem": select_problem,
+        "get_all_members": get_all_members,
+        "get_member_latest_stats": get_member_latest_stats,
+        "update_member_elo": update_member_elo,
+        "get_active_tasks": get_active_tasks,
+        "update_task_status": update_task_status,
+        "escalate_to_mentor": escalate_to_mentor,
+        "get_user_coding_stats": get_user_coding_stats,
+        "schedule_event": schedule_event
+    }
 # Handle optional calendar
 try:
     from tools.calendar_tool import schedule_event
@@ -39,13 +55,19 @@ from dotenv import load_dotenv
 
 load_dotenv(dotenv_path="../.env")
 
-# Supabase Mobile Bridge — dual-write to student mobile app
-try:
-    from supabase_bridge import SupabaseBridge
-    _sb = SupabaseBridge()
-except Exception as _sb_err:
-    _sb = None
-    print(f"⚠  [autonomous_loop] SupabaseBridge unavailable: {_sb_err}")
+# Supabase Mobile Bridge — lazy loaded
+_sb_instance = None
+def _get_sb():
+    global _sb_instance
+    if _sb_instance is not None:
+        return _sb_instance
+    try:
+        from supabase_bridge import SupabaseBridge
+        _sb_instance = SupabaseBridge()
+    except Exception as e:
+        print(f"⚠ [autonomous_loop] SupabaseBridge init error: {e}")
+        return None
+    return _sb_instance
 
 def calculate_elo(old_elo, expected_difficulty, actual_success):
     """Calculates updated rating using Logistic ELO function."""
@@ -155,6 +177,14 @@ def run_loop(proactive_actions: list = None):
         proactive_actions = []
 
     try:
+        tools = get_tools()
+        get_all_members = tools["get_all_members"]
+        get_active_tasks = tools["get_active_tasks"]
+        get_member_latest_stats = tools["get_member_latest_stats"]
+        update_member_elo = tools["update_member_elo"]
+        update_task_status = tools["update_task_status"]
+        get_user_coding_stats = tools["get_user_coding_stats"]
+
         log_msg("Starting Autonomous Intervention Loop...")
         members = get_all_members()
         log_msg(f"Found {len(members)} members.")
@@ -285,6 +315,7 @@ def run_loop(proactive_actions: list = None):
                      update_member_elo(member_ref, new_elo, failures=0)
                      log_msg(f"[Update] {name} succeeded! ELO increased from {elo} to {new_elo}.")
                      # ── Dual-Write: mark completed in Supabase mobile app ──
+                     _sb = _get_sb()
                      if _sb:
                          _sb.mark_task_completed(name, problem_title)
                      continue
@@ -300,6 +331,7 @@ def run_loop(proactive_actions: list = None):
                 failures += 1
                 update_member_elo(member_ref, new_elo, failures)
                 # ── Dual-Write: mark failed in Supabase mobile app ──
+                _sb = _get_sb()
                 if _sb:
                     _sb.mark_task_failed(name, problem_title)
                 log_msg(f"[Update] {name} ELO dropped to {new_elo}. Accumlated Failures: {failures}")
@@ -307,6 +339,8 @@ def run_loop(proactive_actions: list = None):
                 # Escalate if >= 2
                 if failures >= 2:
                     log_msg(f"[Escalate] {name} hit {failures} failures. Scheduling Mentor 1:1.")
+                    schedule_event = tools["schedule_event"]
+                    escalate_to_mentor = tools["escalate_to_mentor"]
                     if schedule_event:
                          event_link = schedule_event.invoke({
                             "summary": f"1:1 Mentor Session: {name}",

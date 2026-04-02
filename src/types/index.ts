@@ -81,4 +81,6 @@ export interface LeaderboardEntry {
   hackerrankTotal: number;
   isTeamLead?: boolean;
   assignedTeamLead?: string;
+  performanceScore?: number;
+  benchmarkLevel?: string;
 }

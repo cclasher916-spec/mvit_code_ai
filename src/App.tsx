@@ -16,6 +16,7 @@ const Leaderboard = React.lazy(() => import('./pages/Leaderboard'));
 const Settings = React.lazy(() => import('./pages/Settings'));
 const IndividualDashboard = React.lazy(() => import('./pages/IndividualDashboard'));
 const Repositories = React.lazy(() => import('./pages/Repositories'));
+const AgentAdmin = React.lazy(() => import('./pages/AgentAdmin'));
 
 const LoadingSpinner = () => (
   <div className="flex w-full h-full min-h-[50vh] items-center justify-center">
@@ -26,6 +27,7 @@ const LoadingSpinner = () => (
 import { DataProvider } from './contexts/DataContext';
 import ErrorBoundary from './components/ui/ErrorBoundary';
 import { ThemeProvider } from './contexts/ThemeContext';
+import AgentChat from './components/AgentChat';
 
 // ... other imports
 
@@ -52,10 +54,13 @@ function App() {
                         <Route path="/leaderboard" element={<Leaderboard />} />
                         <Route path="/settings" element={<Settings />} />
                         <Route path="/individual/:memberId" element={<IndividualDashboard />} />
+                        <Route path="/settings/admin" element={<AgentAdmin />} />
+                        <Route path="/agent-admin" element={<AgentAdmin />} />
                       </Routes>
                     </Suspense>
                   </ErrorBoundary>
                 </Layout>
+                <AgentChat />
               </div>
             </Router>
           </DataProvider>

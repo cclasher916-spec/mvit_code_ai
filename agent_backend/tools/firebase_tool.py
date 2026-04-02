@@ -6,17 +6,22 @@ from firebase_admin import credentials, firestore
 from datetime import datetime
 import time
 
-# Supabase Mobile Bridge — dual-write to student mobile app
-try:
-    from supabase_bridge import SupabaseBridge
-    _sb = SupabaseBridge()
-except Exception:
-    # Try alternate path if called from different context
+# Supabase Mobile Bridge — lazy loaded
+_sb_instance = None
+def get_supabase_bridge():
+    global _sb_instance
+    if _sb_instance is not None:
+        return _sb_instance
     try:
-         from agent_backend.supabase_bridge import SupabaseBridge
-         _sb = SupabaseBridge()
-    except:
-         _sb = None
+        from supabase_bridge import SupabaseBridge
+        _sb_instance = SupabaseBridge()
+    except Exception:
+        try:
+             from agent_backend.supabase_bridge import SupabaseBridge
+             _sb_instance = SupabaseBridge()
+        except:
+             _sb_instance = None
+    return _sb_instance
 
 _cached_all_tasks = []
 _last_tasks_fetch = 0
@@ -24,46 +29,61 @@ _last_tasks_fetch = 0
 # Add root directory to path to locate the firebase JSON if needed.
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
-try:
-    firebase_admin.get_app()
-except ValueError:
-    cred_path_1 = os.path.join(os.path.dirname(__file__), '../../coding-team-profiles-2b0b4df65b4a.json')
-    cred_path_2 = os.path.join(os.path.dirname(__file__), '../coding-team-profiles-2b0b4df65b4a.json')
-    cred_path = os.getenv("FIREBASE_CREDENTIALS_PATH", cred_path_1)
-    if not os.path.exists(cred_path) and os.path.exists(cred_path_2):
-        cred_path = cred_path_2
+_db_instance = None
+def get_db():
+    global _db_instance
+    if _db_instance is not None:
+        return _db_instance
 
-    if os.path.exists(cred_path):
-        # Local dev: load from JSON file
-        cred = credentials.Certificate(cred_path)
-        firebase_admin.initialize_app(cred)
-    else:
-        # Production (Render): load from environment variables
-        project_id    = os.getenv("FIREBASE_PROJECT_ID", "")
-        private_key   = os.getenv("FIREBASE_PRIVATE_KEY", "").replace("\\n", "\n")
-        client_email  = os.getenv("FIREBASE_CLIENT_EMAIL", "")
-        if project_id and private_key and client_email:
-            cred = credentials.Certificate({
-                "type": "service_account",
-                "project_id": project_id,
-                "private_key_id": os.getenv("FIREBASE_PRIVATE_KEY_ID", ""),
-                "private_key": private_key,
-                "client_email": client_email,
-                "client_id": os.getenv("FIREBASE_CLIENT_ID", ""),
-                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-                "token_uri": "https://oauth2.googleapis.com/token",
-                "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-                "client_x509_cert_url": f"https://www.googleapis.com/robot/v1/metadata/x509/{client_email.replace('@','%40')}",
-            })
+    if len(firebase_admin._apps) == 0:
+        # Re-run initialization if apps are missing
+        _initialize_firebase()
+        
+    if len(firebase_admin._apps) > 0:
+        _db_instance = firestore.client()
+    return _db_instance
+
+def _initialize_firebase():
+    try:
+        firebase_admin.get_app()
+    except ValueError:
+        cred_path_1 = os.path.join(os.path.dirname(__file__), '../../coding-team-profiles-2b0b4df65b4a.json')
+        cred_path_2 = os.path.join(os.path.dirname(__file__), '../coding-team-profiles-2b0b4df65b4a.json')
+        cred_path = os.getenv("FIREBASE_CREDENTIALS_PATH", cred_path_1)
+        if not os.path.exists(cred_path) and os.path.exists(cred_path_2):
+            cred_path = cred_path_2
+
+        if os.path.exists(cred_path):
+            cred = credentials.Certificate(cred_path)
             firebase_admin.initialize_app(cred)
         else:
-            print("⚠️  [Firebase] No credentials file or env vars found — Firebase disabled.")
+            project_id    = os.getenv("FIREBASE_PROJECT_ID", "")
+            private_key   = os.getenv("FIREBASE_PRIVATE_KEY", "").replace("\\n", "\n")
+            client_email  = os.getenv("FIREBASE_CLIENT_EMAIL", "")
+            if project_id and private_key and client_email:
+                cred = credentials.Certificate({
+                    "type": "service_account",
+                    "project_id": project_id,
+                    "private_key_id": os.getenv("FIREBASE_PRIVATE_KEY_ID", ""),
+                    "private_key": private_key,
+                    "client_email": client_email,
+                    "client_id": os.getenv("FIREBASE_CLIENT_ID", ""),
+                    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                    "token_uri": "https://oauth2.googleapis.com/token",
+                    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+                    "client_x509_cert_url": f"https://www.googleapis.com/robot/v1/metadata/x509/{client_email.replace('@','%40')}",
+                })
+                firebase_admin.initialize_app(cred)
+            else:
+                print("⚠️  [Firebase] No credentials found.")
 
-db = firestore.client() if len(firebase_admin._apps) > 0 else None
+# Top-level initialization removed to support lazy loading. 
+# get_db() will handle this on-demand.
 
 
 def _find_member_by_name(member_name: str):
     """Helper to find a member using Firestore collection_group for much faster lookups."""
+    db = get_db()
     if not db:
         return None
     
@@ -89,6 +109,7 @@ def get_member_progress(member_name: str) -> str:
     Args:
         member_name: The Full Name of the student/member.
     """
+    db = get_db()
     if not db:
        return "Firebase is not initialized. Please check credentials."
        
@@ -144,6 +165,7 @@ def get_top_performers(dummy: str = "") -> str:
     Use this when asked about the top/best/highest performing members. Takes no real arguments.
     """
     top_n = 5
+    db = get_db()
     if not db:
         return "Firebase is not initialized."
     try:
@@ -190,6 +212,7 @@ def get_top_performers(dummy: str = "") -> str:
 
 def _collect_all_member_scores():
     """Helper: returns a list of members for analytics using fast collection_group."""
+    db = get_db()
     if not db: return []
     member_scores = []
     try:
@@ -212,6 +235,7 @@ def _collect_all_member_scores():
 
 def get_all_members_fast(dummy: str = "") -> list:
     """Internal helper for orchestrator."""
+    db = get_db()
     if not db: return []
     try:
         return [{"ref": doc.reference, "data": doc.to_dict()} for doc in db.collection_group('members').stream()]
@@ -330,6 +354,7 @@ def assign_personalized_task(member_name: str, task_description: str, difficulty
         member_doc.reference.collection('agent_tasks').add(task_data)
 
         # ── Dual-Write → Supabase Mobile App ──────────────────
+        _sb = get_supabase_bridge()
         if _sb:
             import re
             # Extract title and platform from description if possible
@@ -369,6 +394,7 @@ def assign_personalized_task(member_name: str, task_description: str, difficulty
 
 def get_all_members():
     """Returns a list of all members and their document references."""
+    db = get_db()
     if not db:
         return []
     try:
@@ -413,6 +439,7 @@ def update_member_elo(member_ref, new_elo, failures=None):
 
 def get_active_tasks():
     """Fetches all tasks across all members that are currently 'pending'."""
+    db = get_db()
     if not db:
         return []
     try:
@@ -444,6 +471,7 @@ def get_active_tasks():
 def get_all_tasks():
     """Fetches all tasks (pending, completed, failed) across all members for the dashboard. Cached for 60 seconds."""
     global _cached_all_tasks, _last_tasks_fetch
+    db = get_db()
     if not db:
         return []
         
@@ -474,6 +502,7 @@ def get_all_tasks():
                     for doc in sub.stream():
                         collect_tasks(doc.reference)
         
+        db = get_db()
         depts = db.collection('departments').stream()
         for dept in depts:
             collect_tasks(dept.reference)

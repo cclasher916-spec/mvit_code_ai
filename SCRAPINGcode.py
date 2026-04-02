@@ -13,29 +13,66 @@ from email.mime.text import MIMEText
 import firebase_admin
 from firebase_admin import credentials, firestore
 
-from read_google_sheet import read_google_sheet
+# Deferred heavy imports to keep module loading light
+# from read_google_sheet import read_google_sheet
+# from agent_backend.supabase_bridge import SupabaseBridge
 
 # ===================== ENV & SECRETS =====================
 load_dotenv()
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")  # set in .env
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "")  # optional for higher GitHub rate limits
-GMAIL_FROM_EMAIL = os.getenv("GMAIL_FROM_EMAIL", "")  # e.g., 'bytebreakers04@gmail.com'
-GMAIL_APP_PASSWORD = os.getenv("GMAIL_APP_PASSWORD", "")  # Gmail app password
+BREVO_SMTP_LOGIN = os.getenv("BREVO_SMTP_LOGIN", "")
+BREVO_SMTP_KEY = os.getenv("BREVO_SMTP_KEY", "")
+BREVO_SENDER_EMAIL = os.getenv("BREVO_SENDER_EMAIL", "")
 FIREBASE_CREDENTIALS_PATH = os.getenv("FIREBASE_CREDENTIALS_PATH", "coding-team-profiles-2b0b4df65b4a.json")
 
 if not GROQ_API_KEY:
     print("⚠ GROQ_API_KEY not set; AI motivation will use fallbacks.")
 
-# ===================== FIREBASE =====================
-try:
-    firebase_admin.get_app()
-except ValueError:
-    cred = credentials.Certificate(FIREBASE_CREDENTIALS_PATH)
-    firebase_admin.initialize_app(cred)
+# --- Lazy Loader Helpers ---
+_db_instance = None
+_sb_instance = None
 
-db = firestore.client()
+def _get_db():
+    global _db_instance
+    if _db_instance is not None:
+        return _db_instance
+    try:
+        firebase_admin.get_app()
+    except ValueError:
+        if os.path.exists(FIREBASE_CREDENTIALS_PATH):
+            cred = credentials.Certificate(FIREBASE_CREDENTIALS_PATH)
+            firebase_admin.initialize_app(cred)
+        else:
+            # Fallback to env vars like in firebase_tool.py
+            project_id = os.getenv("FIREBASE_PROJECT_ID")
+            if project_id:
+                # Minimal init for scraper
+                firebase_admin.initialize_app()
+            else:
+                print(f"⚠ Firebase credentials not found.")
+                return None
+    _db_instance = firestore.client()
+    return _db_instance
+
+def _get_supabase():
+    global _sb_instance
+    if _sb_instance is not None:
+        return _sb_instance
+    try:
+        try:
+            from agent_backend.supabase_bridge import SupabaseBridge
+        except ImportError:
+            from supabase_bridge import SupabaseBridge
+        _sb_instance = SupabaseBridge()
+    except Exception as e:
+        print(f"⚠ [SupabaseBridge] Connection error: {e}")
+        _sb_instance = None
+    return _sb_instance
+
 HEADERS = {"User-Agent": "Mozilla/5.0"}
+
 
 # ===================== AI HELPERS =====================
 def get_personalized_motivation(name, daily_data):
@@ -119,9 +156,9 @@ def get_color(value):
     return "#6b7280"
 
 # ===================== EMAIL =====================
-def send_email_summary(to_email, subject, body, from_email, app_password, name, daily_data):
-    if not (from_email and app_password and to_email):
-        print("⚠ Email not sent—missing GMAIL_FROM_EMAIL or GMAIL_APP_PASSWORD or recipient.")
+def send_email_summary(to_email, subject, body, from_email, smtp_login, smtp_key, name, daily_data):
+    if not (from_email and smtp_login and smtp_key and to_email):
+        print("⚠ Email not sent—missing BREVO_* configuration or recipient.")
         return
     try:
         lc_total = daily_data.get('leetcode_total', 0)
@@ -207,7 +244,7 @@ Keep coding! ✨
 
         server = smtplib.SMTP('smtp-relay.brevo.com', 587)
         server.starttls()
-        server.login(from_email, app_password)
+        server.login(smtp_login, smtp_key)
         server.sendmail(from_email, to_email, msg.as_string())
         server.quit()
         print(f"✅ Email sent to {to_email}")
@@ -279,27 +316,39 @@ def extract_leetcode_username(url):
 
 def get_leetcode_total(profile_url):
     uname = extract_leetcode_username(profile_url)
-    if not uname: return 0
+    if not uname: return 0, 0
 
     query = """
     query userStats($username: String!) {
       matchedUser(username: $username) {
         submitStats {
           acSubmissionNum { difficulty count }
+          totalSubmissionNum { difficulty count }
         }
       }
     }
     """
     payload = {"query": query, "variables": {"username": uname}}
+    ac_total = 0
+    sub_total = 0
     try:
         r = requests.post("https://leetcode.com/graphql", json=payload,
                           headers={"Content-Type": "application/json"}, timeout=10)
         r.raise_for_status()
-        arr = (r.json().get("data", {}).get("matchedUser", {})
-               .get("submitStats", {}).get("acSubmissionNum", []))
+        stats = r.json().get("data", {}).get("matchedUser", {}).get("submitStats", {})
+        
+        arr = stats.get("acSubmissionNum", [])
         for entry in arr:
             if entry.get("difficulty", "").lower() == "all":
-                return entry.get("count", 0)
+                ac_total = entry.get("count", 0)
+        
+        tot_arr = stats.get("totalSubmissionNum", [])
+        for entry in tot_arr:
+            if entry.get("difficulty", "").lower() == "all":
+                sub_total = entry.get("count", 0)
+                
+        if sub_total < ac_total: sub_total = ac_total # Fail-safe
+        return ac_total, sub_total
     except Exception:
         pass
 
@@ -308,10 +357,10 @@ def get_leetcode_total(profile_url):
         r2 = requests.get(f"https://leetcode.com/u/{uname}/", headers=HEADERS, timeout=10)
         r2.raise_for_status()
         m = re.search(r'"totalSolved":\s*(\d+)', r2.text)
-        if m: return int(m.group(1))
+        if m: return int(m.group(1)), int(m.group(1))
     except Exception:
         pass
-    return 0
+    return 0, 0
 
 def get_skillrack_total(url, retries=2, delay=2):
     if not url:
@@ -336,7 +385,12 @@ def get_skillrack_total(url, retries=2, delay=2):
 def sync_members_from_sheet():
     """Sync members from Google Sheet to Firebase with Team Lead grouping ONLY and Batch tagging."""
     print("🔄 Syncing members from Google Sheet...")
+    db = _get_db()
+    if not db:
+        print("❌ Firebase not initialized. Skipping sync.")
+        return 0
     try:
+        from read_google_sheet import read_google_sheet
         df = read_google_sheet("team_registration_responses")
         df.columns = df.columns.str.strip()
         synced_count = 0
@@ -366,6 +420,7 @@ def sync_members_from_sheet():
                 member_id = full_name.replace(' ', '_')
 
                 # Upsert hierarchy
+                db = _get_db()
                 dept_ref = db.collection('departments').document(dept_id)
                 dept_ref.set({'name': f'{dept} Department', 'updated_at': datetime.now()}, merge=True)
 
@@ -419,21 +474,33 @@ def sync_members_from_sheet():
         return 0
 
 # ===================== MAIN SCRAPING =====================
-def scrape_all_teams():
+def scrape_all_teams(do_sync=True, do_email=True, do_firebase=True, do_supabase=True):
     print("\n" + "="*60)
     print("🚀 STARTING AUTOMATED SCRAPING")
     print("="*60 + "\n")
 
     # 1) Sync members
-    sync_members_from_sheet()
+    if do_sync:
+        sync_members_from_sheet()
+    else:
+        print("⏭️ Skipping Google Sheets Sync...")
 
     # 2) Email creds from env
-    from_email = GMAIL_FROM_EMAIL
-    app_password = GMAIL_APP_PASSWORD
+    from_email = BREVO_SENDER_EMAIL
+    smtp_login = BREVO_SMTP_LOGIN
+    smtp_key = BREVO_SMTP_KEY
 
     # 3) Walk hierarchy and scrape
+    db = _get_db()
+    if not db:
+        print("❌ Firebase not initialized. Aborting scrape.")
+        return
+
     departments = list(db.collection('departments').stream(timeout=120))
     total_members_scraped = 0
+    all_scores = []
+    
+    supabase_bridge = _get_supabase()
 
     for dept_doc in departments:
         dept_id = dept_doc.id
@@ -461,7 +528,7 @@ def scrape_all_teams():
                     
                     time.sleep(0.2)
 
-                    lc_total = get_leetcode_total(profiles.get('leetcode_url', ''));    time.sleep(uniform(1.0, 2.0))
+                    lc_total, lc_submissions = get_leetcode_total(profiles.get('leetcode_url', ''));    time.sleep(uniform(1.0, 2.0))
                     sr_total = get_skillrack_total(profiles.get('skillrack_url', '')); time.sleep(uniform(1.0, 2.0))
                     cc_total = get_codechef_solved(profiles.get('codechef_url', ''));  time.sleep(uniform(1.0, 2.0))
                     hr_total = get_hackerrank_solved(profiles.get('hackerrank_url', '')); time.sleep(uniform(1.0, 2.0))
@@ -516,21 +583,87 @@ def scrape_all_teams():
                         'codechef_daily_increase': cc_diff,
                         'hackerrank_daily_increase': hr_diff,
                         'github_daily_increase': gh_diff,
+                        'leetcode_submissions': lc_submissions,
                         'scraped_at': datetime.now()
                     }
 
-                    member_doc.reference.collection('daily_totals').document(today).set(daily_data)
+                    # Track for global leaderboard sync
+                    all_scores.append({
+                        'name': name,
+                        'total': lc_total + sr_total + cc_total + hr_total + gh_repos,
+                        'streak': 0
+                    })
 
-                    if email and from_email and app_password:
+                    # ── Write → Firebase (Web Dashboard) ──────────────────
+                    if do_firebase:
+                        member_doc.reference.collection('daily_totals').document(today).set(daily_data)
+                        print(f"         ✅ Saved to Firebase")
+
+                    # ── Write → Supabase (Mobile App) ──────────────────────
+                    if do_supabase and supabase_bridge:
+                        supabase_bridge.upsert_daily_activity(
+                            member_name       = name,
+                            leetcode_solved   = lc_total,
+                            skillrack_solved  = sr_total,
+                            codechef_solved   = cc_total,
+                            hackerrank_solved = hr_total,
+                            github_repos      = gh_repos,
+                            lc_daily          = lc_diff,
+                            sr_daily          = sr_diff,
+                            cc_daily          = cc_diff,
+                            hr_daily          = hr_diff,
+                            gh_daily          = gh_diff,
+                        )
+                    # ───────────────────────────────────────────────────────
+
+                    if do_email and email and from_email and smtp_key and smtp_login:
                         subject = f"🚀 Your Daily Coding Report - {datetime.now().strftime('%b %d')}"
-                        send_email_summary(email, subject, "", from_email, app_password, name, daily_data)
+                        send_email_summary(email, subject, "", from_email, smtp_login, smtp_key, name, daily_data)
 
                     total_members_scraped += 1
-                    print(f"         ✅ Saved to Firebase")
+
+    # 4) Global Leaderboard Sync → Supabase Cache
+    if all_scores and do_supabase:
+        print(f"\n🏆 Syncing Global Leaderboard ({len(all_scores)} members)...")
+        all_scores.sort(key=lambda x: x['total'], reverse=True)
+        if supabase_bridge:
+            for rank, score_data in enumerate(all_scores, 1):
+                supabase_bridge.upsert_leaderboard(
+                    member_name=score_data['name'],
+                    rank=rank,
+                    total_solved=score_data['total'],
+                    streak=score_data.get('streak', 0),
+                    rank_type="college",
+                    period="overall"
+                )
+        print("✅ Leaderboard sync complete.")
 
     print("\n" + "="*60)
     print(f"🎉 SCRAPING COMPLETE! Processed {total_members_scraped} members")
     print("="*60 + "\n")
 
 if __name__ == "__main__":
-    scrape_all_teams()
+    print("Welcome to the MVIT Coding Team Scraper!")
+    sync_input = input("Do you want to sync members from the Google Sheet? (y/n) [default: y]: ").strip().lower()
+    do_sync = sync_input != 'n'
+
+    email_input = input("Do you want to send daily summary emails via Brevo? (y/n) [default: y]: ").strip().lower()
+    do_email = email_input != 'n'
+
+    print("\nWhere do you want to sync data?")
+    print("  [1] Both  — Firebase (web) + Supabase (app)  [default]")
+    print("  [2] App only  — Supabase only (mobile app)")
+    print("  [3] Web only  — Firebase only (web dashboard)")
+    target_input = input("Enter choice (1/2/3) [default: 1]: ").strip()
+
+    if target_input == "2":
+        do_firebase, do_supabase = False, True
+        print("📱 Mode: App only (Supabase)")
+    elif target_input == "3":
+        do_firebase, do_supabase = True, False
+        print("🌐 Mode: Web only (Firebase)")
+    else:
+        do_firebase, do_supabase = True, True
+        print("🔄 Mode: Both (Firebase + Supabase)")
+
+    scrape_all_teams(do_sync=do_sync, do_email=do_email, do_firebase=do_firebase, do_supabase=do_supabase)

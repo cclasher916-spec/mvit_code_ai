@@ -8,9 +8,10 @@ from agent import run_agent
 from meta_planner import extract_goals
 from orchestrator import run_flows
 from tools.rag_tool import ingest_pdf
-import autonomous_loop
-from autonomous_loop import run_loop, sys_logs
 from tools.firebase_tool import get_all_tasks
+# Defer heavy autonomous_loop import to background task to keep startup fast
+# import autonomous_loop
+# from autonomous_loop import run_loop, sys_logs
 from behavior_analyzer import BehaviorAnalyzer
 from mentor_engine import generate_mentor_feedback
 import asyncio
@@ -43,6 +44,8 @@ async def continuous_autonomous_loop():
     while True:
         try:
             print("[SYSTEM] Automatically running scheduled autonomous loop...")
+            # Import here to avoid blocking startup
+            from autonomous_loop import run_loop
             # run_loop is synchronous, so we run it in a thread to not block FastAPI
             await asyncio.to_thread(run_loop, proactive_log)
         except Exception as e:
@@ -52,10 +55,10 @@ async def continuous_autonomous_loop():
 
 @app.on_event("startup")
 async def startup_event():
-    # Wait 10 seconds before starting the heavy background loop
+    # Wait 20 seconds before starting the heavy background loop
     # to allow the server to fully bind to Render's port first.
     async def delayed_start():
-        await asyncio.sleep(10)
+        await asyncio.sleep(20)
         asyncio.create_task(continuous_autonomous_loop())
     
     asyncio.create_task(delayed_start())
@@ -97,7 +100,11 @@ def chat_with_agent(req: ChatRequest):
 @app.get("/proactive-status")
 def get_proactive_status():
     """Returns what the background autonomous agent has done proactively."""
-    return {"proactive_actions": proactive_log, "loop_logs": sys_logs[-20:]}
+    try:
+        from autonomous_loop import sys_logs
+        return {"proactive_actions": proactive_log, "loop_logs": sys_logs[-20:]}
+    except ImportError:
+        return {"proactive_actions": proactive_log, "loop_logs": []}
 
 @app.post("/ingest")
 async def upload_document(file: UploadFile = File(...)):
@@ -108,6 +115,7 @@ async def upload_document(file: UploadFile = File(...)):
     with open(temp_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
         
+    import autonomous_loop
     autonomous_loop.is_ingestion_running = True
     try:
         res = ingest_pdf(temp_path)
@@ -123,6 +131,7 @@ async def upload_document(file: UploadFile = File(...)):
 @app.post("/trigger_loop")
 def trigger_intervention_loop(background_tasks: BackgroundTasks):
     try:
+        from autonomous_loop import run_loop
         background_tasks.add_task(run_loop, proactive_log)
         return {"status": "success", "message": "Autonomous intervention loop initiated. Tracking proactive actions."}
     except Exception as e:
@@ -130,7 +139,11 @@ def trigger_intervention_loop(background_tasks: BackgroundTasks):
 
 @app.get("/logs")
 def get_loop_logs():
-    return {"logs": sys_logs}
+    try:
+        from autonomous_loop import sys_logs
+        return {"logs": sys_logs}
+    except ImportError:
+        return {"logs": []}
 
 @app.get("/student/{name}/analysis")
 def get_student_analysis(name: str):

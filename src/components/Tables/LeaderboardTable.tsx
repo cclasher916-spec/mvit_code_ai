@@ -37,7 +37,8 @@ const LeaderboardTable: React.FC<LeaderboardTableProps> = ({ data, showTeamColum
             <th className="px-6 py-4 text-center font-semibold text-textMuted uppercase tracking-wider">SR</th>
             <th className="px-6 py-4 text-center font-semibold text-textMuted uppercase tracking-wider">CC</th>
             <th className="px-6 py-4 text-center font-semibold text-textMuted uppercase tracking-wider">HR</th>
-            <th className="px-6 py-4 text-right font-semibold text-textMuted uppercase tracking-wider">Total</th>
+            <th className="px-6 py-4 text-center font-semibold text-textMuted uppercase tracking-wider">Level</th>
+            <th className="px-6 py-4 text-right font-semibold text-textMuted uppercase tracking-wider">Score</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-border/50">
@@ -91,13 +92,22 @@ const LeaderboardTable: React.FC<LeaderboardTableProps> = ({ data, showTeamColum
               <td className="px-6 py-4 whitespace-nowrap text-center relative z-10"><span className="text-sm font-bold text-[#00D4AA] bg-[#00D4AA]/10 px-2 rounded-md py-0.5">{entry.skillrackTotal}</span></td>
               <td className="px-6 py-4 whitespace-nowrap text-center relative z-10"><span className="text-sm font-bold text-[#D4957A] bg-[#D4957A]/10 px-2 rounded-md py-0.5">{entry.codechefTotal}</span></td>
               <td className="px-6 py-4 whitespace-nowrap text-center relative z-10"><span className="text-sm font-bold text-[#00EA64] bg-[#00EA64]/10 px-2 rounded-md py-0.5">{entry.hackerrankTotal}</span></td>
+              <td className="px-6 py-4 whitespace-nowrap text-center relative z-10">
+                <span className={`text-xs font-bold uppercase tracking-wider px-2 py-1 rounded-md border text-white ${
+                  entry.benchmarkLevel === 'Advanced' ? 'bg-purple-500/20 border-purple-500/50' : 
+                  entry.benchmarkLevel === 'Intermediate' ? 'bg-blue-500/20 border-blue-500/50' : 
+                  'bg-gray-500/20 border-gray-500/50'
+                }`}>
+                  {entry.benchmarkLevel}
+                </span>
+              </td>
               <td className="px-6 py-4 whitespace-nowrap text-right relative z-10">
                 <div className={`inline-flex items-center px-3 py-1 rounded border font-bold text-lg ${entry.rank === 1 ? 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400 drop-shadow-sm' :
                   entry.rank === 2 ? 'bg-slate-300/10 border-slate-400/30 text-slate-300 drop-shadow-sm' :
                     entry.rank === 3 ? 'bg-amber-500/10 border-amber-500/30 text-amber-500 drop-shadow-sm' :
                       entry.isTeamLead ? 'bg-yellow-500/5 border-yellow-500/20 text-yellow-500/90' : 'bg-white/5 border-border text-white'
                   }`}>
-                  {entry.totalSolved.toLocaleString()}
+                  {entry.performanceScore}
                 </div>
               </td>
             </tr>
