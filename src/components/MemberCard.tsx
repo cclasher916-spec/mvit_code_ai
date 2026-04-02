@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { DailyTotal } from '../types';
 import Card from './ui/Card';
 import { User, Trophy, Eye, TrendingUp, Crown } from 'lucide-react';
-import Button from './ui/Button';
 
 interface MemberCardProps {
   member: DailyTotal;

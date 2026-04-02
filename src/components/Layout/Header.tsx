@@ -3,7 +3,6 @@ import { Menu, Search, User, Sun, Moon, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Button from '../ui/Button';
 import { useSearch } from '../../hooks/useSearch';
-import { useToast } from '../ui/Toaster';
 import { useTheme } from '../../contexts/ThemeContext';
 
 interface HeaderProps {

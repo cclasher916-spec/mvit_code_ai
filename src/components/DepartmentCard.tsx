@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Users, Building2, TrendingUp, AlertTriangle, Crown, Activity } from 'lucide-react';
+import { Users, Building2, AlertTriangle, Crown, Activity } from 'lucide-react';
 import PerformanceBar from './ui/PerformanceBar';
 
 interface DepartmentCardProps {

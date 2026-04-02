@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { MessageCircle, X, Send, Bot, Sparkles, Minus, Maximize2, Trash2, ArrowRight } from 'lucide-react';
+import { MessageCircle, X, Send, Bot, Minus, Maximize2, Trash2, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
