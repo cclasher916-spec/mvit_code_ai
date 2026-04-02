@@ -62,3 +62,8 @@ Thumbs.db
 # Secrets
 credentials.json
 coding-team-profiles-*.json
+# Python
+__pycache__/
+venv/
+*.pyc
+
