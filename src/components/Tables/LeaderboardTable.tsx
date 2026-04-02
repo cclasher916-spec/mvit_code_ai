@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { LeaderboardEntry } from '../../types';
 import { Crown, Trophy, Medal, Award } from 'lucide-react';
 
@@ -64,7 +65,9 @@ const LeaderboardTable: React.FC<LeaderboardTableProps> = ({ data, showTeamColum
                 <div className="flex items-center">
                   <div>
                     <div className="flex items-center space-x-2">
-                      <div className="text-sm font-bold text-white group-hover:text-brand-400 transition-colors">{entry.memberName}</div>
+                      <Link to={`/individual/${entry.memberId}`} className="text-sm font-bold text-white hover:text-brand-400 transition-colors">
+                        {entry.memberName}
+                      </Link>
                       {getRankIcon(entry.rank, Boolean(entry.isTeamLead))}
                       {entry.isTeamLead && (
                         <span className="inline-flex items-center justify-center bg-yellow-500/10 text-yellow-500 border border-yellow-500/30 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider mt-0.5">
@@ -80,7 +83,9 @@ const LeaderboardTable: React.FC<LeaderboardTableProps> = ({ data, showTeamColum
               </td>
               {showTeamColumn && (
                 <td className="px-6 py-4 whitespace-nowrap relative z-10">
-                  <div className="text-sm font-bold text-white mb-0.5">{entry.teamId}</div>
+                  <Link to={`/team/${entry.deptId}/${entry.sectionId}/${entry.teamId}`} className="text-sm font-bold text-white mb-0.5 hover:text-brand-400 transition-colors block">
+                    {entry.teamId}
+                  </Link>
                   <div className="text-xs font-medium text-textMuted flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span> {entry.sectionId}
                     <span className="mx-1 opacity-50">•</span>
@@ -101,15 +106,7 @@ const LeaderboardTable: React.FC<LeaderboardTableProps> = ({ data, showTeamColum
                   {entry.benchmarkLevel}
                 </span>
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-right relative z-10">
-                <div className={`inline-flex items-center px-3 py-1 rounded border font-bold text-lg ${entry.rank === 1 ? 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400 drop-shadow-sm' :
-                  entry.rank === 2 ? 'bg-slate-300/10 border-slate-400/30 text-slate-300 drop-shadow-sm' :
-                    entry.rank === 3 ? 'bg-amber-500/10 border-amber-500/30 text-amber-500 drop-shadow-sm' :
-                      entry.isTeamLead ? 'bg-yellow-500/5 border-yellow-500/20 text-yellow-500/90' : 'bg-white/5 border-border text-white'
-                  }`}>
-                  {entry.performanceScore}
-                </div>
-              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-right relative z-10 font-bold text-white pr-8">{entry.totalSolved}</td>
             </tr>
           ))}
         </tbody>

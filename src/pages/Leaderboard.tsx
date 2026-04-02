@@ -161,8 +161,8 @@ const Leaderboard: React.FC = () => {
                 <div className="glass-card border-t-4 border-t-slate-400 rounded-xl p-5 w-full relative overflow-hidden group">
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-500/10 to-transparent"></div>
                   <div className="text-3xl font-display font-black text-slate-300 mb-2 opacity-80 group-hover:opacity-100 transition-opacity">#2</div>
-                  <div className="font-bold text-white truncate text-lg">{topPerformers[1].memberName}</div>
-                  {viewLevel !== 'team' && <div className="text-xs text-textMuted truncate mt-1">{topPerformers[1].teamId}</div>}
+                  <Link to={`/individual/${topPerformers[1].memberId}`} className="font-bold text-white truncate text-lg block hover:text-brand-400 transition-colors">{topPerformers[1].memberName}</Link>
+                  {viewLevel !== 'team' && <Link to={`/team/${topPerformers[1].deptId}/${topPerformers[1].sectionId}/${topPerformers[1].teamId}`} className="text-xs text-textMuted truncate mt-1 block hover:text-brand-400 transition-colors">{topPerformers[1].teamId}</Link>}
                   <div className="text-xl font-bold text-slate-300 mt-3 pt-3 border-t border-white/10">{topPerformers[1].totalSolved.toLocaleString()}</div>
                   <div className="text-[10px] text-textMuted uppercase tracking-wider mt-1">Problems</div>
                 </div>
@@ -182,8 +182,8 @@ const Leaderboard: React.FC = () => {
                 <div className="glass-card border-t-4 border-t-yellow-500 rounded-xl p-6 w-full relative overflow-hidden shadow-2xl shadow-yellow-500/10 group">
                   <div className="absolute inset-0 bg-gradient-to-t from-yellow-500/20 to-transparent"></div>
                   <div className="text-4xl font-display font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-200 to-yellow-600 mb-2 drop-shadow-sm group-hover:scale-110 transition-transform">#1</div>
-                  <div className="font-bold text-white text-xl truncate">{topPerformers[0].memberName}</div>
-                  {viewLevel !== 'team' && <div className="text-sm text-yellow-200/80 truncate mt-1 font-medium">{topPerformers[0].teamId}</div>}
+                  <Link to={`/individual/${topPerformers[0].memberId}`} className="font-bold text-white text-xl truncate block hover:text-yellow-400 transition-colors uppercase">{topPerformers[0].memberName}</Link>
+                  {viewLevel !== 'team' && <Link to={`/team/${topPerformers[0].deptId}/${topPerformers[0].sectionId}/${topPerformers[0].teamId}`} className="text-sm text-yellow-200/80 truncate mt-1 font-medium block hover:text-yellow-400 transition-colors">{topPerformers[0].teamId}</Link>}
                   <div className="text-3xl font-black text-yellow-400 mt-4 pt-4 border-t border-yellow-500/20 drop-shadow-md">{topPerformers[0].totalSolved.toLocaleString()}</div>
                   <div className="text-xs text-yellow-500/80 uppercase tracking-wider mt-1 font-bold">Total Problems</div>
                 </div>
@@ -197,8 +197,9 @@ const Leaderboard: React.FC = () => {
                 <div className="glass-card border-t-4 border-t-amber-700 rounded-xl p-5 w-full relative overflow-hidden group">
                   <div className="absolute inset-0 bg-gradient-to-t from-amber-700/10 to-transparent"></div>
                   <div className="text-3xl font-display font-black text-amber-600 mb-2 opacity-80 group-hover:opacity-100 transition-opacity">#3</div>
-                  <div className="font-bold text-white truncate text-lg">{topPerformers[2].memberName}</div>
-                  {viewLevel !== 'team' && <div className="text-xs text-textMuted truncate mt-1">{topPerformers[2].teamId}</div>}
+                  <Link to={`/individual/${topPerformers[2].memberId}`} className="font-bold text-white truncate text-lg block hover:text-amber-400 transition-colors">{topPerformers[2].memberName}</Link>
+                  {viewLevel !== 'team' && <Link to={`/team/${topPerformers[2].deptId}/${topPerformers[2].sectionId}/${topPerformers[2].teamId}`} className="text-xs text-textMuted truncate mt-1 block hover:text-amber-400 transition-colors">{topPerformers[2].teamId}</Link>}
+
                   <div className="text-xl font-bold text-amber-500 mt-3 pt-3 border-t border-white/10">{topPerformers[2].totalSolved.toLocaleString()}</div>
                   <div className="text-[10px] text-textMuted uppercase tracking-wider mt-1">Problems</div>
                 </div>

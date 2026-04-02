@@ -89,10 +89,12 @@ const MemberTable: React.FC<MemberTableProps> = ({ data }) => {
                          {member.isTeamLead ? <Crown className="w-5 h-5 text-yellow-500" /> : <User className="w-5 h-5 text-brand-500" />}
                       </div>
                       <div className="min-w-0 flex-1">
-                         <div className="flex items-center gap-2">
-                           <h3 className="font-bold text-textMain text-base truncate">{member.memberName}</h3>
+                        <div className="flex items-center gap-2">
+                           <Link to={`/individual/${member.memberId}`} className="font-bold text-textMain text-base truncate hover:text-brand-500 transition-colors">
+                              {member.memberName}
+                           </Link>
                            <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded-sm tracking-widest ${level.bg} ${level.color}`}>{level.label}</span>
-                         </div>
+                        </div>
                          <div className="flex items-center gap-2 mt-1">
                            <span className="text-xs text-textMuted font-mono">Rank {rank}</span>
                            <span className="w-1 h-1 rounded-full bg-border"></span>

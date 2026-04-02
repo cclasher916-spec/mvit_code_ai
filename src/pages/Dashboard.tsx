@@ -4,251 +4,278 @@ import { useData } from '../contexts/DataContext';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import MemberTable from '../components/MemberTable';
 import { getLatestByMember } from '../utils/dataProcessing';
-import { ChevronRight, GraduationCap, Building2, BrainCircuit, Database, Activity, AlertTriangle, TrendingUp, Bot, Trophy, ArrowRight, ShieldAlert } from 'lucide-react';
-
-const BATCH_OPTIONS = ['2023-2027', '2024-2028', '2025-2029'];
+import { ChevronRight, Building2, BrainCircuit, Database, Activity, AlertTriangle, TrendingUp, Bot, Trophy, ArrowRight, ShieldAlert } from 'lucide-react';
 
 const Dashboard: React.FC = () => {
+
   const { data, hierarchy, loading } = useData();
   const [selectedDept, setSelectedDept] = useState<string>('AIML');
-  const [selectedBatch, setSelectedBatch] = useState<string>('2023-2027');
   const [viewMode, setViewMode] = useState<'intelligence' | 'data'>('intelligence');
+  const [intelligenceFilter, setIntelligenceFilter] = useState<string | null>(null);
 
   // Filter logic
   const filtered = useMemo(() => {
-    return (data || []).filter((d) => {
+    let base = (data || []).filter((d) => {
       if (!d) return false;
       const deptOk = !selectedDept || d.deptId === selectedDept;
-      const batchOk = !selectedBatch || (d as any).batch === selectedBatch || (d as any).assignedBatch === selectedBatch;
-      return deptOk && batchOk;
+      return deptOk;
     });
-  }, [data, selectedDept, selectedBatch]);
+
+    if (intelligenceFilter === 'inactive') {
+      base = base.filter(m => m.totalDailyIncrease === 0);
+    } else if (intelligenceFilter === 'trial') {
+      base = base.filter(m => m.leetcodeDailyIncrease > 5 && m.totalDailyIncrease < 2);
+    } else if (intelligenceFilter === 'rapid') {
+      base = base.filter(m => m.totalDailyIncrease >= 15);
+    }
+
+    return base;
+  }, [data, selectedDept, intelligenceFilter]);
 
   const departments = hierarchy ? Object.keys(hierarchy) : [];
   
   // Heuristics for Intelligence Mode
   const latestData = useMemo(() => getLatestByMember(filtered || []), [filtered]);
-  
+  const baseLatest = useMemo(() => {
+    const baseList = (data || []).filter((d) => {
+      if (!d) return false;
+      const deptOk = !selectedDept || d.deptId === selectedDept;
+      return deptOk;
+    });
+    return getLatestByMember(baseList);
+  }, [data, selectedDept]);
+
   const activeCount = latestData.filter(m => m.totalDailyIncrease > 0).length;
   const avgScore = latestData.length > 0 ? Math.round(latestData.reduce((acc, m) => acc + (m.totalSolved || 0), 0) / latestData.length) : 0;
   
-  // Fast signals
-  const inactiveStudents = latestData.filter(m => m.totalDailyIncrease === 0).slice(0, 12);
-  const trialAndErrorCandidates = latestData.filter(m => m.leetcodeDailyIncrease > 5 && m.totalDailyIncrease < 2).slice(0, 8);
-  const rapidImprovers = latestData.filter(m => m.totalDailyIncrease >= 15).slice(0, 5);
+  const inactiveStudents = baseLatest.filter(m => m.totalDailyIncrease === 0);
+  const trialAndErrorCandidates = baseLatest.filter(m => m.leetcodeDailyIncrease > 5 && m.totalDailyIncrease < 2);
+  const rapidImprovers = baseLatest.filter(m => m.totalDailyIncrease >= 15);
   
-  const topPerformers = [...latestData].sort((a,b) => (b.totalSolved || 0) - (a.totalSolved || 0)).slice(0, 5);
+  const inactiveCount = inactiveStudents.length;
+  const trialCount = trialAndErrorCandidates.length;
+  const rapidCount = rapidImprovers.length;
+  
+  const topPerformers = [...baseLatest].sort((a,b) => (b.totalSolved || 0) - (a.totalSolved || 0)).slice(0, 5);
+
 
   const dynamicInterventions = useMemo(() => {
-     const sortedByIncrease = [...latestData].sort((a,b) => (b.totalDailyIncrease || 0) - (a.totalDailyIncrease || 0));
-     const sortedByRank = [...latestData].sort((a,b) => (b.totalSolved || 0) - (a.totalSolved || 0));
+     const sortedByIncrease = [...baseLatest].sort((a,b) => (b.totalDailyIncrease || 0) - (a.totalDailyIncrease || 0));
+     const sortedByRank = [...baseLatest].sort((a,b) => (b.totalSolved || 0) - (a.totalSolved || 0));
      
      const activities = [];
      
      if (sortedByIncrease[0] && sortedByIncrease[0].totalDailyIncrease > 0) {
         activities.push({
+           id: sortedByIncrease[0].memberId,
            name: sortedByIncrease[0].memberName,
-           action: `Stood out today solving +${sortedByIncrease[0].totalDailyIncrease} tasks`,
-           time: "Recently Active"
+           action: `Solved +${sortedByIncrease[0].totalDailyIncrease} tasks today`,
+           time: "Just Now"
         });
      }
      
      if (sortedByRank[0]) {
         activities.push({
+           id: sortedByRank[0].memberId,
            name: sortedByRank[0].memberName,
-           action: `Maintaining Top Platform Leadership at ${sortedByRank[0].totalSolved} pts`,
-           time: "Consistent"
+           action: `Leading with ${sortedByRank[0].totalSolved} pts`,
+           time: "Top Rank"
         });
      }
      
-     const activeUsers = latestData.filter(m => m.totalDailyIncrease > 0 && m.memberId !== sortedByIncrease[0]?.memberId);
+     const activeUsers = baseLatest.filter(m => m.totalDailyIncrease > 0 && m.memberId !== sortedByIncrease[0]?.memberId);
      if (activeUsers.length > 0) {
         activities.push({
+           id: activeUsers[0].memberId,
            name: activeUsers[0].memberName,
-           action: `Demonstrating active engagement across platforms`,
-           time: "Active Tracker"
+           action: `Active participation detected`,
+           time: "Active"
         });
      }
      
      return activities.length > 0 ? activities.slice(0, 3) : [
-       { name: "System", action: "Evaluating user learning paths...", time: "Just now" }
+       { id: null, name: "System", action: "Evaluating paths...", time: "Live" }
      ];
-  }, [latestData]);
+  }, [baseLatest]);
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <LoadingSpinner size="lg" />
-        <span className="ml-3 text-textMuted text-lg font-medium">Loading intelligence core...</span>
+        <span className="ml-3 text-textMuted text-lg font-medium">Booting intelligence core...</span>
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8 animate-fade-in relative">
+    <div className="mx-auto space-y-6 sm:space-y-8 animate-fade-in relative px-2 sm:px-0">
       <div className="absolute top-0 right-0 w-96 h-96 bg-brand-500/10 rounded-full blur-3xl pointer-events-none -z-10"></div>
       
-      {/* Top Refine View & Navigation */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-surface p-4 rounded-2xl border border-border shadow-soft">
-         <div className="flex items-center gap-3 bg-background p-1.5 rounded-xl border border-border">
+      {/* Search/Filter Controls Overhaul */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-surface p-3 sm:p-4 rounded-3xl border border-border transition-all">
+         <div className="flex items-center gap-2 bg-background p-1.5 rounded-2xl border border-border w-full md:w-auto">
             <button 
-               onClick={() => setViewMode('intelligence')} 
-               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${viewMode === 'intelligence' ? 'bg-brand-500 text-white shadow-md' : 'text-textMuted hover:text-textMain hover:bg-surface'}`}
+               onClick={() => { setViewMode('intelligence'); setIntelligenceFilter(null); }} 
+               className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${viewMode === 'intelligence' ? 'bg-brand-500 text-white shadow-xl' : 'text-textMuted hover:text-textMain'}`}
             >
-               <BrainCircuit className="w-4 h-4" /> Intelligence View
+               <BrainCircuit className="w-4 h-4" /> Intelligence
             </button>
             <button 
                onClick={() => setViewMode('data')} 
-               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${viewMode === 'data' ? 'bg-brand-500 text-white shadow-md' : 'text-textMuted hover:text-textMain hover:bg-surface'}`}
+               className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${viewMode === 'data' ? 'bg-brand-500 text-white shadow-xl' : 'text-textMuted hover:text-textMain'}`}
             >
-               <Database className="w-4 h-4" /> Full Data View
+               <Database className="w-4 h-4" /> Data
             </button>
          </div>
 
          <div className="flex items-center gap-3 w-full md:w-auto">
-            <div className="relative group">
-               <Building2 className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-textMuted pointer-events-none" />
-               <select value={selectedDept} onChange={(e) => setSelectedDept(e.target.value)} className="appearance-none pl-9 pr-10 py-2 bg-background border border-border rounded-xl focus:ring-2 focus:ring-brand-500/50 text-textMain transition-all cursor-pointer text-sm font-bold w-full md:w-auto outline-none">
-                 <option value="" className="bg-surface">System Wide</option>
+            <div className="relative group flex-1 md:flex-none">
+               <Building2 className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-textMuted" />
+               <select value={selectedDept} onChange={(e) => setSelectedDept(e.target.value)} className="appearance-none pl-9 pr-10 py-2.5 bg-background border border-border rounded-xl focus:ring-2 focus:ring-brand-500/50 text-textMain text-xs sm:text-sm font-bold w-full outline-none">
+                 <option value="">System Wide</option>
                  {departments.map((id) => (
-                   <option key={id} value={id} className="bg-surface">{hierarchy?.[id]?.name || id}</option>
+                   <option key={id} value={id}>{hierarchy?.[id]?.name || id}</option>
                  ))}
                </select>
-               <ChevronRight className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-textMuted pointer-events-none rotate-90" />
-            </div>
-            
-            <div className="relative group hidden sm:block">
-               <GraduationCap className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-textMuted pointer-events-none" />
-               <select value={selectedBatch} onChange={(e) => setSelectedBatch(e.target.value)} className="appearance-none pl-9 pr-10 py-2 bg-background border border-border rounded-xl focus:ring-2 focus:ring-brand-500/50 text-textMain transition-all cursor-pointer text-sm font-bold w-full md:w-auto outline-none">
-                 <option value="" className="bg-surface">All Batches</option>
-                 {BATCH_OPTIONS.map((b) => (
-                   <option key={b} value={b} className="bg-surface">{b}</option>
-                 ))}
-               </select>
-               <ChevronRight className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-textMuted pointer-events-none rotate-90" />
+               <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-textMuted rotate-90" />
             </div>
          </div>
       </div>
 
       {viewMode === 'intelligence' ? (
-        <div className="space-y-6 animate-fade-in">
-           {/* Section 1: System Status */}
-           <div className="bg-gradient-to-r from-brand-600/20 to-surface border border-brand-500/20 rounded-2xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl relative overflow-hidden">
+        <div className="space-y-6 sm:space-y-8">
+           {/* Hero Section */}
+           <div className="bg-gradient-to-br from-brand-600/20 via-surface to-background border border-brand-500/20 rounded-[2rem] p-6 sm:p-10 shadow-2xl relative overflow-hidden">
               <div className="absolute top-0 right-0 p-8 opacity-5">
                  <BrainCircuit className="w-64 h-64 text-brand-500" />
               </div>
-              <div className="relative z-10 w-full md:w-auto">
-                 <div className="flex items-center gap-3 mb-2">
-                    <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.8)]"></div>
-                    <h2 className="text-sm font-bold tracking-widest text-brand-500 uppercase">System Status</h2>
+              <div className="relative z-10 text-center sm:text-left sm:max-w-2xl">
+                 <div className="flex items-center justify-center sm:justify-start gap-3 mb-3">
+                    <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_15px_rgba(34,197,94,1)]"></div>
+                    <span className="text-[10px] font-black tracking-[0.2em] text-brand-500 uppercase">Neural Network Active</span>
                  </div>
-                 <h1 className="text-3xl md:text-4xl font-black text-textMain tracking-tight">Autonomous Learning Intelligence Active</h1>
-                 <p className="text-textMuted mt-2 max-w-lg">The background agent is currently monitoring learning paths and user trajectories.</p>
+                 <h1 className="text-3xl sm:text-5xl font-black text-textMain tracking-tight leading-none mb-4">Autonomous Performance Oversight</h1>
+                 <p className="text-sm sm:text-base text-textMuted font-medium leading-relaxed">Real-time surveillance of student learning tracks and cross-platform growth trajectories.</p>
               </div>
               
-              <div className="relative z-10 flex gap-4 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 hide-scrollbar">
-                 <div className="bg-surface border border-border p-4 rounded-xl min-w-[120px] shrink-0 text-center shadow-md">
-                    <div className="text-3xl font-black text-textMain">{latestData.length}</div>
-                    <div className="text-[10px] text-textMuted uppercase font-bold tracking-widest mt-1">Total Members</div>
+              <div className="relative z-10 flex gap-3 sm:gap-4 mt-8 overflow-x-auto pb-4 hide-scrollbar">
+                 <div className="bg-surface/50 backdrop-blur-sm border border-border p-4 sm:p-5 rounded-2xl min-w-[120px] flex-1 text-center shadow-lg">
+                    <div className="text-3xl sm:text-4xl font-black text-textMain">{baseLatest.length}</div>
+                    <div className="text-[10px] text-textMuted uppercase font-bold tracking-widest mt-1">Personnel</div>
                  </div>
-                 <div className="bg-brand-500/10 border border-brand-500/20 p-4 rounded-xl min-w-[120px] shrink-0 text-center shadow-md">
-                    <div className="text-3xl font-black text-brand-500">{activeCount}</div>
-                    <div className="text-[10px] text-brand-500/70 uppercase font-bold tracking-widest mt-1">Active Users</div>
+                 <div className="bg-brand-500/10 backdrop-blur-sm border border-brand-500/20 p-4 sm:p-5 rounded-2xl min-w-[120px] flex-1 text-center shadow-lg">
+                    <div className="text-3xl sm:text-4xl font-black text-brand-500">{activeCount}</div>
+                    <div className="text-[10px] text-brand-500/70 uppercase font-bold tracking-widest mt-1">Active</div>
                  </div>
-                 <div className="bg-surface border border-border p-4 rounded-xl min-w-[120px] shrink-0 text-center shadow-md">
-                    <div className="text-3xl font-black text-textMain">{avgScore}</div>
+                 <div className="bg-surface/50 backdrop-blur-sm border border-border p-4 sm:p-5 rounded-2xl min-w-[120px] flex-1 text-center shadow-lg hidden sm:block">
+                    <div className="text-3xl sm:text-4xl font-black text-textMain">{avgScore}</div>
                     <div className="text-[10px] text-textMuted uppercase font-bold tracking-widest mt-1">Avg Score</div>
                  </div>
               </div>
            </div>
 
-           {/* Section 2: AI Insights */}
-           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-surface border border-border rounded-2xl p-6 hover:shadow-lg transition-all group cursor-pointer relative overflow-hidden">
-                 <div className="absolute top-0 left-0 w-1 h-full bg-red-500/50"></div>
-                 <AlertTriangle className="w-6 h-6 text-red-500 mb-4 group-hover:scale-110 transition-transform" />
-                 <h3 className="text-3xl font-black text-textMain mb-1"><span className="text-red-500">{inactiveStudents.length}</span> Users</h3>
-                 <p className="text-sm text-textMuted font-medium">Inactive &gt; 3 days</p>
-              </div>
+           {/* Mobile Insights Grid */}
+           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+              <button 
+                onClick={() => { setViewMode('data'); setIntelligenceFilter('inactive'); }}
+                className="bg-surface border border-border rounded-3xl p-6 hover:border-red-500/50 hover:shadow-2xl transition-all group relative text-left"
+              >
+                 <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <AlertTriangle className="w-12 h-12 text-red-500" />
+                 </div>
+                 <h3 className="text-3xl sm:text-4xl font-black text-red-500 mb-1">{inactiveCount}</h3>
+                 <p className="text-[11px] text-textMuted uppercase font-extrabold tracking-widest">Cold Accounts</p>
+                 <div className="mt-4 flex items-center gap-1.5 text-[10px] font-bold text-red-500/80 group-hover:translate-x-1 transition-transform">
+                    RE-ENGAGE SYSTEM <ArrowRight className="w-3 h-3" />
+                 </div>
+              </button>
               
-              <div className="bg-surface border border-border rounded-2xl p-6 hover:shadow-lg transition-all group cursor-pointer relative overflow-hidden">
-                 <div className="absolute top-0 left-0 w-1 h-full bg-yellow-500/50"></div>
-                 <Activity className="w-6 h-6 text-yellow-500 mb-4 group-hover:scale-110 transition-transform" />
-                 <h3 className="text-3xl font-black text-textMain mb-1"><span className="text-yellow-500">{trialAndErrorCandidates.length}</span> Users</h3>
-                 <p className="text-sm text-textMuted font-medium">Showing trial-and-error signals</p>
-              </div>
+              <button 
+                onClick={() => { setViewMode('data'); setIntelligenceFilter('trial'); }}
+                className="bg-surface border border-border rounded-3xl p-6 hover:border-yellow-500/50 hover:shadow-2xl transition-all group relative text-left"
+              >
+                 <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <Activity className="w-12 h-12 text-yellow-500" />
+                 </div>
+                 <h3 className="text-3xl sm:text-4xl font-black text-yellow-500 mb-1">{trialCount}</h3>
+                 <p className="text-[11px] text-textMuted uppercase font-extrabold tracking-widest">Efficiency Flags</p>
+                 <div className="mt-4 flex items-center gap-1.5 text-[10px] font-bold text-yellow-500/80 group-hover:translate-x-1 transition-transform">
+                    DIAGNOSE FRICTION <ArrowRight className="w-3 h-3" />
+                 </div>
+              </button>
 
-              <div className="bg-surface border border-border rounded-2xl p-6 hover:shadow-lg transition-all group cursor-pointer relative overflow-hidden">
-                 <div className="absolute top-0 left-0 w-1 h-full bg-green-500/50"></div>
-                 <TrendingUp className="w-6 h-6 text-green-500 mb-4 group-hover:scale-110 transition-transform" />
-                 <h3 className="text-3xl font-black text-textMain mb-1"><span className="text-green-500">{rapidImprovers.length}</span> Users</h3>
-                 <p className="text-sm text-textMuted font-medium">Improving rapidly this week</p>
-              </div>
+              <button 
+                onClick={() => { setViewMode('data'); setIntelligenceFilter('rapid'); }}
+                className="bg-surface border border-border rounded-3xl p-6 hover:border-green-500/50 hover:shadow-2xl transition-all group relative text-left"
+              >
+                 <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <TrendingUp className="w-12 h-12 text-green-500" />
+                 </div>
+                 <h3 className="text-3xl sm:text-4xl font-black text-green-500 mb-1">{rapidCount}</h3>
+                 <p className="text-[11px] text-textMuted uppercase font-extrabold tracking-widest">Peak Velocity</p>
+                 <div className="mt-4 flex items-center gap-1.5 text-[10px] font-bold text-green-500/80 group-hover:translate-x-1 transition-transform">
+                    AMPLIFY MOMENTUM <ArrowRight className="w-3 h-3" />
+                 </div>
+              </button>
            </div>
 
-           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Section 3: Top Performers (Takes up 2 columns) */}
-              <div className="lg:col-span-2 bg-surface border border-border rounded-2xl p-6 shadow-soft">
-                 <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-lg font-bold text-textMain flex items-center gap-2"><Trophy className="w-5 h-5 text-yellow-500" /> Platform Leaders</h3>
-                    <Link to="/leaderboard" className="text-xs font-bold text-brand-500 hover:text-brand-600 uppercase tracking-wider flex items-center gap-1">Full Leaderboard <ArrowRight className="w-3 h-3" /></Link>
+           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Leaderboard Excerpt */}
+              <div className="lg:col-span-2 bg-surface border border-border rounded-[2rem] p-6 sm:p-8 shadow-soft">
+                 <div className="flex justify-between items-center mb-8">
+                    <h3 className="text-xl font-black text-textMain flex items-center gap-3"><Trophy className="w-6 h-6 text-yellow-500" /> Elite Cadre</h3>
+                    <Link to="/leaderboard" className="p-2 px-4 rounded-full bg-brand-500/10 text-brand-500 text-[10px] font-black uppercase tracking-widest hover:bg-brand-500 hover:text-white transition-all">Full View</Link>
                  </div>
                  
-                 <div className="space-y-3">
+                 <div className="space-y-4">
                     {topPerformers.map((p, i) => (
-                       <Link key={p.memberId} to={`/individual/${p.memberId}`} className="block">
-                         <div className="bg-background hover:bg-border/30 border border-border rounded-xl p-3 flex items-center justify-between transition-colors">
-                            <div className="flex items-center gap-4">
-                               <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black ${i === 0 ? 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-500' : i === 1 ? 'bg-slate-300/20 text-slate-500 dark:text-slate-300' : i === 2 ? 'bg-amber-600/20 text-amber-700 dark:text-amber-500' : 'bg-border/50 text-textMuted'}`}>
-                                  #{i + 1}
-                               </div>
-                               <div>
-                                  <div className="font-bold text-textMain">{p.memberName}</div>
-                                  <div className="text-[10px] text-textMuted font-bold uppercase tracking-wider">{p.teamId} • {p.sectionId}</div>
-                               </div>
-                            </div>
-                            <div className="text-right flex items-center gap-3">
-                               <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${p.totalSolved > 500 ? 'bg-green-500/20 text-green-600 dark:text-green-400' : p.totalSolved > 200 ? 'bg-brand-500/20 text-brand-600 dark:text-brand-400' : 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-500'}`}>
-                                  {p.totalSolved > 500 ? 'Advanced' : p.totalSolved > 200 ? 'Intermediate' : 'Beginner'}
-                               </span>
-                               <span className="font-mono text-lg font-black text-textMain w-16 text-right">{p.totalSolved}</span>
-                            </div>
-                         </div>
+                       <Link key={p.memberId} to={`/individual/${p.memberId}`} className="block group">
+                          <div className="bg-background/50 hover:bg-white dark:hover:bg-brand-900/10 border border-transparent hover:border-brand-500/30 rounded-2xl p-4 flex items-center justify-between transition-all">
+                             <div className="flex items-center gap-4 min-w-0">
+                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black shrink-0 ${i === 0 ? 'bg-yellow-500/20 text-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.2)]' : 'bg-surface text-textMuted'}`}>
+                                   0{i + 1}
+                                </div>
+                                <div className="min-w-0">
+                                   <div className="font-bold text-textMain group-hover:text-brand-500 transition-colors truncate text-base sm:text-lg">{p.memberName}</div>
+                                   <div className="text-[10px] text-textMuted font-bold uppercase tracking-widest truncate">{p.teamId} • {p.sectionId}</div>
+                                </div>
+                             </div>
+                             <div className="text-right shrink-0">
+                                <span className="font-mono text-xl sm:text-2xl font-black text-textMain tracking-tighter">{p.totalSolved}</span>
+                             </div>
+                          </div>
                        </Link>
                     ))}
                  </div>
               </div>
 
-              {/* Section 4 & 5 Stacked */}
-              <div className="space-y-6">
-                 {/* Needs Attention */}
-                 <div className="bg-surface border border-border rounded-2xl p-6 shadow-soft">
-                    <h3 className="text-sm font-bold text-red-500 flex items-center gap-2 uppercase tracking-wider mb-4"><ShieldAlert className="w-4 h-4" /> Requires Attention</h3>
-                    <div className="space-y-3">
+              {/* Feed & Focus */}
+              <div className="space-y-6 sm:space-y-8">
+                 <div className="bg-surface border border-border rounded-[2rem] p-6 sm:p-8 shadow-soft relative overflow-hidden">
+                    <div className="flex items-center gap-2 text-red-500 font-black uppercase tracking-[0.15em] text-[10px] mb-6"><ShieldAlert className="w-4 h-4" /> Priority Focus</div>
+                    <div className="space-y-4">
                        {trialAndErrorCandidates.slice(0, 3).map(p => (
-                          <div key={p.memberId} className="flex justify-between items-center p-3 bg-red-500/5 rounded-lg border border-red-500/10">
-                             <div>
-                                <div className="text-sm font-bold text-textMain">{p.memberName}</div>
-                                <div className="text-[10px] text-red-500/80 font-bold uppercase tracking-wider">Low Efficiency Flag</div>
+                          <Link key={p.memberId} to={`/individual/${p.memberId}`} className="flex justify-between items-center p-4 bg-red-500/5 rounded-2xl border border-red-500/10 hover:bg-red-500/10 hover:scale-[1.02] transition-all">
+                             <div className="min-w-0">
+                                <div className="text-sm font-bold text-textMain truncate">{p.memberName}</div>
+                                <div className="text-[10px] text-red-500/80 font-black uppercase tracking-widest mt-0.5">Efficiency flag</div>
                              </div>
-                             <Link to={`/individual/${p.memberId}`} className="text-[10px] font-bold bg-background hover:bg-border/50 text-textMain px-3 py-1.5 rounded transition-colors uppercase tracking-wider border border-border">Analyze</Link>
-                          </div>
+                             <ArrowRight className="w-4 h-4 text-red-500/50" />
+                          </Link>
                        ))}
-                       {trialAndErrorCandidates.length === 0 && (
-                          <div className="text-[11px] font-medium text-textMuted italic">No prominent risk flags detected today.</div>
-                       )}
                     </div>
                  </div>
 
-                 {/* Recent System Insights (Dynamic) */}
-                 <div className="bg-surface border border-border rounded-2xl p-6 shadow-soft">
-                    <h3 className="text-sm font-bold text-brand-500 flex items-center gap-2 uppercase tracking-wider mb-4"><Bot className="w-4 h-4" /> System Watch</h3>
-                    <div className="space-y-4">
+                 <div className="bg-surface border border-border rounded-[2rem] p-6 sm:p-8 shadow-soft">
+                    <div className="flex items-center gap-2 text-brand-500 font-black uppercase tracking-[0.15em] text-[10px] mb-6"><Bot className="w-4 h-4" /> Neural Feed</div>
+                    <div className="space-y-6">
                        {dynamicInterventions.map((action, i) => (
-                          <div key={i} className="border-l-2 border-brand-500/30 pl-3 py-1 relative">
-                             <div className="absolute -left-[5px] top-2.5 w-2 h-2 rounded-full bg-brand-500"></div>
-                             <div className="text-[10px] text-textMuted uppercase font-bold tracking-wider mb-0.5">{action.time}</div>
-                             <div className="text-xs font-medium text-textMain">{action.action} <span className="font-bold ml-1 text-brand-600 dark:text-brand-400">→ {action.name}</span></div>
+                          <div key={i} className="pl-4 border-l-2 border-brand-500/20 relative py-0.5">
+                             <div className="absolute -left-1 top-2 w-2 h-2 rounded-full bg-brand-500 shadow-[0_0_8px_rgba(14,165,233,0.8)]"></div>
+                             <div className="text-[9px] text-textMuted uppercase font-extrabold tracking-widest mb-1">{action.time}</div>
+                             <Link to={action.id ? `/individual/${action.id}` : '#'} className="text-xs font-semibold text-textMain hover:text-brand-500 transition-colors leading-relaxed block">
+                                {action.action} <span className="text-brand-500 font-black">@ {action.name}</span>
+                             </Link>
                           </div>
                        ))}
                     </div>
@@ -257,7 +284,20 @@ const Dashboard: React.FC = () => {
            </div>
         </div>
       ) : (
-        <MemberTable data={filtered} />
+        <div className="space-y-4 animate-fade-in px-minus-2">
+           {intelligenceFilter && (
+              <div className="flex items-center justify-between bg-brand-500/10 border border-brand-500/30 p-4 rounded-2xl mx-2 sm:mx-0">
+                 <div className="flex items-center gap-3 text-brand-500 text-sm font-black uppercase tracking-widest">
+                    <Activity className="w-4 h-4" /> 
+                    {intelligenceFilter} filtered
+                 </div>
+                 <button onClick={() => setIntelligenceFilter(null)} className="px-3 py-1 rounded-full bg-brand-500 text-white text-[10px] font-black uppercase tracking-widest shadow-lg">Reset</button>
+              </div>
+           )}
+           <div className="bg-surface sm:rounded-3xl border sm:border border-border shadow-2xl overflow-hidden">
+              <MemberTable data={filtered} />
+           </div>
+        </div>
       )}
     </div>
   );

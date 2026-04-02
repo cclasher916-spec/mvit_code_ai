@@ -1,5 +1,5 @@
 import React from 'react';
-import { Menu, Bell, Search, User, Sun, Moon } from 'lucide-react';
+import { Menu, Search, User, Sun, Moon, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Button from '../ui/Button';
 import { useSearch } from '../../hooks/useSearch';
@@ -12,30 +12,38 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   const navigate = useNavigate();
-  const { addToast } = useToast();
   const { setTheme, actualTheme } = useTheme();
   const { searchTerm: query, setSearchTerm: setQuery, results: members } = useSearch('members');
   const { setSearchTerm: setTeamQuery, results: teams } = useSearch('teams');
+
+  const [isSearchOpen, setIsSearchOpen] = React.useState(false);
 
   // Sync queries
   React.useEffect(() => {
     setTeamQuery(query);
   }, [query, setTeamQuery]);
+
+  const handleNavigate = (path: string) => {
+    navigate(path);
+    setQuery('');
+    setIsSearchOpen(false);
+  };
+
   return (
     <header className="glass-card border-none border-b border-border sticky top-0 z-30 transition-all duration-300">
-      <div className="flex items-center justify-between px-6 py-4">
-        {/* Left section - Mobile menu button */}
-        <div className="flex items-center">
+      <div className="flex items-center justify-between px-4 lg:px-6 py-3 lg:py-4">
+        {/* Left section - Mobile menu button & Search Trigger */}
+        <div className="flex items-center flex-1">
           <Button
             variant="ghost"
             size="sm"
             onClick={onMenuClick}
-            className="lg:hidden mr-4 text-textMuted hover:text-white hover:bg-white/10"
+            className="lg:hidden mr-2 text-textMuted hover:text-white"
           >
             <Menu className="h-5 w-5" />
           </Button>
 
-          {/* Search bar */}
+          {/* Desktop Search bar */}
           <div className="hidden md:flex relative group">
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -55,7 +63,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
               )}
             </div>
 
-            {/* Search Results Dropdown - Premium Glassmorphism Look */}
+            {/* Desktop Search Results Dropdown */}
             {(members.length > 0 || teams.length > 0) && query && (
               <div className="absolute top-12 left-0 w-full bg-surface/95 backdrop-blur-xl rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.5)] border border-border max-h-[400px] overflow-y-auto z-50 animate-fade-in divide-y divide-white/5">
                 {teams.length > 0 && (
@@ -67,10 +75,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
                       <div
                         key={team.id}
                         className="px-3 py-2.5 hover:bg-white/5 rounded-lg cursor-pointer flex items-center transition-colors group"
-                        onClick={() => {
-                          navigate(`/team/${team.deptId}/${team.sectionId}/${team.id}`);
-                          setQuery('');
-                        }}
+                        onClick={() => handleNavigate(`/team/${team.deptId}/${team.sectionId}/${team.id}`)}
                       >
                         <div className="w-8 h-8 rounded-md bg-white/5 border border-white/10 flex items-center justify-center mr-3 group-hover:border-brand-500/30 group-hover:bg-brand-500/10 transition-colors">
                           <span className="text-sm font-medium text-textMuted group-hover:text-brand-400">T</span>
@@ -83,7 +88,6 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
                     ))}
                   </div>
                 )}
-
                 {members.length > 0 && (
                   <div className="p-3">
                     <div className="text-xs font-semibold text-accent-purple uppercase tracking-wider px-3 mb-2 flex items-center gap-2">
@@ -93,10 +97,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
                       <div
                         key={member.memberId || Math.random().toString()}
                         className="px-3 py-2.5 hover:bg-white/5 rounded-lg cursor-pointer flex items-center transition-colors group"
-                        onClick={() => {
-                          navigate(`/individual/${member.memberId}`);
-                          setQuery('');
-                        }}
+                        onClick={() => handleNavigate(`/individual/${member.memberId}`)}
                       >
                         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mr-3 shadow-inner">
                           <span className="text-xs font-bold text-white">{(member.memberName || 'U').substring(0, 2).toUpperCase()}</span>
@@ -112,10 +113,20 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
               </div>
             )}
           </div>
+          
+          {/* Mobile Search Toggle */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsSearchOpen(true)}
+            className="md:hidden text-textMuted hover:text-white"
+          >
+            <Search className="h-5 w-5" />
+          </Button>
         </div>
 
         {/* Right section - Actions */}
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-1 lg:space-x-2">
           {/* Refresh button */}
           <Button
             variant="ghost"
@@ -127,26 +138,11 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
             <span className="flex items-center text-xs font-medium gap-1.5"><div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)]"></div> Sync</span>
           </Button>
 
-          {/* Notifications */}
-          <div className="relative hidden sm:block">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-textMuted hover:text-white hover:bg-white/10 rounded-full h-10 w-10 p-0 flex items-center justify-center"
-              onClick={() => addToast({ type: 'info', title: 'Notifications', message: 'You have no new notifications' })}
-            >
-              <Bell className="h-5 w-5" />
-            </Button>
-            <span className="absolute top-2 right-2.5 w-2 h-2 bg-accent-pink rounded-full border-2 border-surface"></span>
-          </div>
-
-          <div className="h-6 w-px bg-border mx-1"></div>
-
           {/* Theme Toggle */}
           <Button
             variant="ghost"
             size="sm"
-            className="text-textMuted hover:text-white hover:bg-white/10 rounded-full h-10 w-10 p-0 flex items-center justify-center transition-transform hover:rotate-12"
+            className="text-textMuted hover:text-white hover:bg-white/10 rounded-full h-10 w-10 p-0 flex items-center justify-center"
             onClick={() => setTheme(actualTheme === 'dark' ? 'light' : 'dark')}
             title="Toggle Theme"
           >
@@ -157,7 +153,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
 
           {/* Profile */}
           <button
-            className="flex items-center gap-2 ml-1 p-1 hover:bg-white/5 rounded-full pr-3 transition-colors"
+            className="flex items-center gap-2 p-1 hover:bg-white/5 rounded-full pr-1 md:pr-3 transition-colors"
             onClick={() => navigate('/settings')}
           >
             <div className="h-8 w-8 rounded-full bg-gradient-hero flex items-center justify-center shadow-lg border border-white/20">
@@ -167,6 +163,59 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
           </button>
         </div>
       </div>
+
+      {/* Mobile Search Overlay */}
+      {isSearchOpen && (
+        <div className="fixed inset-0 z-[100] bg-surface flex flex-col items-stretch animate-fade-in md:hidden">
+          <div className="flex items-center px-4 py-4 border-b border-border gap-4">
+            <Search className="h-5 w-5 text-brand-400 shrink-0" />
+            <input
+              autoFocus
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search..."
+              className="flex-1 bg-transparent border-none text-white focus:ring-0 text-lg"
+            />
+            <Button variant="ghost" size="sm" onClick={() => setIsSearchOpen(false)}>
+              <X className="h-6 w-6 text-textMuted" />
+            </Button>
+          </div>
+          <div className="flex-1 overflow-y-auto divide-y divide-white/5 bg-background/50">
+            {teams.length === 0 && members.length === 0 && query && (
+               <div className="p-8 text-center text-textMuted">No results found for "{query}"</div>
+            )}
+            {teams.length > 0 && (
+              <div className="p-4">
+                <div className="text-[10px] uppercase font-bold tracking-widest text-brand-400 mb-4 px-2">Teams</div>
+                {teams.map(team => (
+                  <div key={team.id} className="p-3 mb-2 bg-surface/50 rounded-xl border border-border flex items-center gap-3" onClick={() => handleNavigate(`/team/${team.deptId}/${team.sectionId}/${team.id}`)}>
+                    <div className="w-10 h-10 rounded-lg bg-brand-500/10 flex items-center justify-center text-brand-400 font-bold tracking-tighter text-sm">T</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-bold text-white truncate">{team.name}</div>
+                      <div className="text-[10px] text-textMuted uppercase font-bold">{team.deptId} › {team.sectionId}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {members.length > 0 && (
+              <div className="p-4">
+                <div className="text-[10px] uppercase font-bold tracking-widest text-accent-purple mb-4 px-2">Members</div>
+                {members.map(member => (
+                  <div key={member.memberId} className="p-3 mb-2 bg-surface/50 rounded-xl border border-border flex items-center gap-3" onClick={() => handleNavigate(`/individual/${member.memberId}`)}>
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs">{(member.memberName || 'U').substring(0, 2).toUpperCase()}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-bold text-white truncate">{member.memberName}</div>
+                      <div className="text-[10px] text-textMuted uppercase font-bold">{member.teamId}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </header>
   );
 };
