@@ -81,11 +81,11 @@ const Leaderboard: React.FC = () => {
       </nav>
 
       {/* Hero Section */}
-      <div className="glass-card rounded-2xl p-8 relative overflow-hidden group border border-white/5">
+      <div className="glass-card rounded-2xl p-5 md:p-8 relative overflow-hidden group border border-white/5">
         <div className="absolute inset-0 bg-gradient-to-r from-accent-purple/10 to-brand-500/10 opacity-50"></div>
-        <div className="relative z-10">
-          <h1 className="text-3xl md:text-4xl font-bold bg-gradient-hero bg-clip-text text-transparent mb-2 tracking-tight">Global Leaderboard 🏆</h1>
-          <p className="text-textMuted max-w-xl">Celebrating excellence in coding across all levels. Challenge yourself and climb the ranks.</p>
+        <div className="relative z-10 text-center md:text-left">
+          <h1 className="text-2xl md:text-4xl font-bold bg-gradient-hero bg-clip-text text-transparent mb-2 tracking-tight">Global Leaderboard 🏆</h1>
+          <p className="text-textMuted max-w-xl mx-auto md:mx-0">Celebrating excellence in coding across all levels. Challenge yourself and climb the ranks.</p>
         </div>
       </div>
 
@@ -100,12 +100,12 @@ const Leaderboard: React.FC = () => {
             Leaderboard Scope
           </CardTitle>
         </CardHeader>
-        <CardContent className="pt-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <CardContent className="p-4 md:p-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
             <div className="space-y-6">
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-textMuted mb-3">View Level</label>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 border border-border/50 p-1 rounded-xl bg-surface/30">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 border border-border/50 p-1 rounded-xl bg-surface/30">
                   {(['global', 'department', 'section', 'team'] as const).map((level) => (
                     <button key={level} onClick={() => setViewLevel(level)} className={`px-3 py-2 text-sm rounded-lg transition-all capitalize font-medium ${viewLevel === level ? 'bg-gradient-hero text-white shadow-lg shadow-brand-500/20' : 'text-textMuted hover:text-white hover:bg-white/5'}`}>{level === 'global' ? 'All' : level}</button>
                   ))}
@@ -143,9 +143,9 @@ const Leaderboard: React.FC = () => {
       </div>
 
       {topPerformers.length >= 3 && (
-        <div className="glass-card rounded-2xl relative overflow-hidden mt-12 mb-8 border border-yellow-500/20">
+        <div className="glass-card rounded-2xl relative overflow-hidden mt-6 md:mt-12 mb-4 md:mb-8 border border-yellow-500/20">
           <div className="absolute inset-0 bg-gradient-to-b from-yellow-500/5 to-transparent pointer-events-none"></div>
-          <div className="p-6 border-b border-border/50 text-center">
+          <div className="p-4 md:p-6 border-b border-border/50 text-center">
             <h3 className="text-2xl font-display font-bold text-white flex items-center justify-center gap-3">
               <span className="text-2xl">🏆</span> Hall of Fame <span className="text-2xl">🏆</span>
             </h3>
@@ -210,34 +210,34 @@ const Leaderboard: React.FC = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
         <Card hover className="bg-gradient-to-br from-blue-500/10 to-transparent border-blue-500/20 group relative overflow-hidden">
           <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/10 rounded-full blur-xl -mr-10 -mt-10 transition-transform group-hover:scale-150 duration-700 pointer-events-none"></div>
-          <div className="flex items-center p-6 relative z-10">
+          <div className="flex items-center p-4 md:p-6 relative z-10">
             <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 mr-4"><Users className="h-6 w-6 text-blue-400" /></div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-textMuted mb-1">Total Participants</p>
-              <p className="text-3xl font-display font-bold text-white">{leaderboard.length}</p>
+              <p className="text-[10px] md:text-xs font-semibold uppercase tracking-wider text-textMuted mb-1">Total Participants</p>
+              <p className="text-2xl md:text-3xl font-display font-bold text-white">{leaderboard.length}</p>
             </div>
           </div>
         </Card>
         <Card hover className="bg-gradient-to-br from-green-500/10 to-transparent border-green-500/20 group relative overflow-hidden">
           <div className="absolute top-0 right-0 w-24 h-24 bg-green-500/10 rounded-full blur-xl -mr-10 -mt-10 transition-transform group-hover:scale-150 duration-700 pointer-events-none"></div>
-          <div className="flex items-center p-6 relative z-10">
+          <div className="flex items-center p-4 md:p-6 relative z-10">
             <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20 mr-4"><Target className="h-6 w-6 text-green-400" /></div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-textMuted mb-1">Total Problems</p>
-              <p className="text-3xl font-display font-bold text-white">{leaderboard.reduce((sum, entry) => sum + entry.totalSolved, 0).toLocaleString()}</p>
+              <p className="text-[10px] md:text-xs font-semibold uppercase tracking-wider text-textMuted mb-1">Total Problems</p>
+              <p className="text-2xl md:text-3xl font-display font-bold text-white">{leaderboard.reduce((sum, entry) => sum + entry.totalSolved, 0).toLocaleString()}</p>
             </div>
           </div>
         </Card>
         <Card hover className="bg-gradient-to-br from-purple-500/10 to-transparent border-purple-500/20 group relative overflow-hidden">
           <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/10 rounded-full blur-xl -mr-10 -mt-10 transition-transform group-hover:scale-150 duration-700 pointer-events-none"></div>
-          <div className="flex items-center p-6 relative z-10">
+          <div className="flex items-center p-4 md:p-6 relative z-10">
             <div className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/20 mr-4"><Crown className="h-6 w-6 text-purple-400" /></div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-textMuted mb-1">Team Leaders</p>
-              <p className="text-3xl font-display font-bold text-white">{leaderboard.filter(e => e.isTeamLead).length}</p>
+              <p className="text-[10px] md:text-xs font-semibold uppercase tracking-wider text-textMuted mb-1">Team Leaders</p>
+              <p className="text-2xl md:text-3xl font-display font-bold text-white">{leaderboard.filter(e => e.isTeamLead).length}</p>
             </div>
           </div>
         </Card>

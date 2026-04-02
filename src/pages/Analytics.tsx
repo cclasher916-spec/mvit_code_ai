@@ -85,10 +85,10 @@ const Analytics: React.FC = () => {
       </nav>
 
       {/* Hero Section */}
-      <div className="glass-card rounded-2xl p-8 relative overflow-hidden group border border-white/5">
+      <div className="glass-card rounded-2xl p-5 md:p-8 relative overflow-hidden group border border-white/5">
         <div className="absolute inset-0 bg-gradient-to-r from-brand-500/10 to-accent-pink/10 opacity-50"></div>
-        <div className="relative z-10">
-          <h1 className="text-3xl md:text-4xl font-bold bg-gradient-hero bg-clip-text text-transparent mb-2 tracking-tight">
+        <div className="relative z-10 text-center md:text-left">
+          <h1 className="text-2xl md:text-4xl font-bold bg-gradient-hero bg-clip-text text-transparent mb-2 tracking-tight">
             📊 Performance Analytics
           </h1>
           <p className="text-textMuted max-w-xl">
@@ -109,12 +109,12 @@ const Analytics: React.FC = () => {
             Analysis Scope
           </CardTitle>
         </CardHeader>
-        <CardContent className="pt-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <CardContent className="p-4 md:p-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
             <div className="space-y-6">
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-textMuted mb-3">View Level</label>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 border border-border/50 p-1 rounded-xl bg-surface/30">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 border border-border/50 p-1 rounded-xl bg-surface/30">
                   {(['organization', 'department', 'section', 'team'] as const).map((level) => (
                     <button
                       key={level}
@@ -162,9 +162,9 @@ const Analytics: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
         <Card hover className="bg-gradient-to-br from-brand-600/10 to-transparent border-brand-500/20 group relative overflow-hidden">
           <div className="absolute top-0 right-0 w-24 h-24 bg-brand-500/10 rounded-full blur-xl -mr-10 -mt-10 transition-transform group-hover:scale-150 duration-700 pointer-events-none"></div>
-          <div className="flex items-center p-6 relative z-10">
-            <div className="p-4 rounded-xl bg-brand-500/20 shadow-inner border border-brand-500/30">
-              <Users className="h-7 w-7 text-brand-400" />
+          <div className="flex items-center p-4 md:p-6 relative z-10">
+            <div className="p-3 md:p-4 rounded-xl bg-brand-500/20 shadow-inner border border-brand-500/30">
+              <Users className="h-6 w-6 md:h-7 md:w-7 text-brand-400" />
             </div>
             <div className="ml-5">
               <p className="text-xs font-semibold text-textMuted uppercase tracking-wider">Active Members</p>
@@ -175,9 +175,9 @@ const Analytics: React.FC = () => {
 
         <Card hover className="bg-gradient-to-br from-green-500/10 to-transparent border-green-500/20 group relative overflow-hidden">
           <div className="absolute top-0 right-0 w-24 h-24 bg-green-500/10 rounded-full blur-xl -mr-10 -mt-10 transition-transform group-hover:scale-150 duration-700 pointer-events-none"></div>
-          <div className="flex items-center p-6 relative z-10">
-            <div className="p-4 rounded-xl bg-green-500/20 shadow-inner border border-green-500/30">
-              <Target className="h-7 w-7 text-green-400" />
+          <div className="flex items-center p-4 md:p-6 relative z-10">
+            <div className="p-3 md:p-4 rounded-xl bg-green-500/20 shadow-inner border border-green-500/30">
+              <Target className="h-6 w-6 md:h-7 md:w-7 text-green-400" />
             </div>
             <div className="ml-5">
               <p className="text-xs font-semibold text-textMuted uppercase tracking-wider">Total Problems</p>
@@ -188,9 +188,9 @@ const Analytics: React.FC = () => {
 
         <Card hover className="bg-gradient-to-br from-accent-purple/10 to-transparent border-accent-purple/20 group relative overflow-hidden">
           <div className="absolute top-0 right-0 w-24 h-24 bg-accent-purple/10 rounded-full blur-xl -mr-10 -mt-10 transition-transform group-hover:scale-150 duration-700 pointer-events-none"></div>
-          <div className="flex items-center p-6 relative z-10">
-            <div className="p-4 rounded-xl bg-accent-purple/20 shadow-inner border border-accent-purple/30">
-              <TrendingUp className="h-7 w-7 text-accent-purple" />
+          <div className="flex items-center p-4 md:p-6 relative z-10">
+            <div className="p-3 md:p-4 rounded-xl bg-accent-purple/20 shadow-inner border border-accent-purple/30">
+              <TrendingUp className="h-6 w-6 md:h-7 md:w-7 text-accent-purple" />
             </div>
             <div className="ml-5">
               <p className="text-xs font-semibold text-textMuted uppercase tracking-wider">Average Score</p>
@@ -201,9 +201,9 @@ const Analytics: React.FC = () => {
 
         <Card hover className="bg-gradient-to-br from-yellow-500/10 to-transparent border-yellow-500/20 group relative overflow-hidden">
           <div className="absolute top-0 right-0 w-24 h-24 bg-yellow-500/10 rounded-full blur-xl -mr-10 -mt-10 transition-transform group-hover:scale-150 duration-700 pointer-events-none"></div>
-          <div className="flex items-center p-6 relative z-10">
-            <div className="p-4 rounded-xl bg-yellow-500/20 shadow-inner border border-yellow-500/30">
-              <Trophy className="h-7 w-7 text-yellow-500" />
+          <div className="flex items-center p-4 md:p-6 relative z-10">
+            <div className="p-3 md:p-4 rounded-xl bg-yellow-500/20 shadow-inner border border-yellow-500/30">
+              <Trophy className="h-6 w-6 md:h-7 md:w-7 text-yellow-500" />
             </div>
             <div className="ml-5">
               <p className="text-xs font-semibold text-textMuted uppercase tracking-wider">Top Score</p>
@@ -223,8 +223,8 @@ const Analytics: React.FC = () => {
           <CardHeader className="border-b border-white/5 pb-4">
             <CardTitle className="text-lg">Team Performance Comparison</CardTitle>
           </CardHeader>
-          <CardContent className="pt-6">
-            <div className="h-80 w-full">
+          <CardContent className="p-4 md:p-6">
+            <div className="h-64 md:h-80 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={trendData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
@@ -254,8 +254,8 @@ const Analytics: React.FC = () => {
           <CardHeader className="border-b border-white/5 pb-4">
             <CardTitle className="text-lg">Platform Distribution</CardTitle>
           </CardHeader>
-          <CardContent className="pt-6">
-            <div className="h-80 w-full flex justify-center items-center relative">
+          <CardContent className="p-4 md:p-6">
+            <div className="h-64 md:h-80 w-full flex justify-center items-center relative">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -301,8 +301,8 @@ const Analytics: React.FC = () => {
         <CardHeader className="border-b border-white/5 pb-4">
           <CardTitle className="text-lg">Performance Trends Overview</CardTitle>
         </CardHeader>
-        <CardContent className="pt-6">
-          <div className="h-80 w-full">
+        <CardContent className="p-4 md:p-6">
+          <div className="h-64 md:h-80 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={trendData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />

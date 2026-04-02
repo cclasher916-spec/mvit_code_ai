@@ -9,7 +9,6 @@ import {
   X,
   Home,
   GitBranch,
-  Bot
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import Button from '../ui/Button';
@@ -38,7 +37,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     { name: 'Leaderboard', href: '/leaderboard', icon: Trophy },
     { name: 'Teams', href: '/teams', icon: Users },
     { name: 'Repositories', href: '/repositories', icon: GitBranch },
-    { name: 'Agent Admin', href: '/agent-admin', icon: Bot },
     { name: 'Settings', href: '/settings', icon: Settings },
   ];
 

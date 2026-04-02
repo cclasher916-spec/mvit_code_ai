@@ -80,9 +80,9 @@ const Teams: React.FC = () => {
         <span className="font-medium text-gray-900">Teams</span>
       </nav>
 
-      <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
-        <h1 className="text-3xl font-bold bg-gradient-hero bg-clip-text text-transparent mb-2">👥 Team Directory</h1>
-        <p className="text-gray-600">Browse and manage all teams across your organization</p>
+      <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-5 md:p-8 border border-white/20 text-center md:text-left">
+        <h1 className="text-2xl md:text-3xl font-bold bg-gradient-hero bg-clip-text text-transparent mb-2">👥 Team Directory</h1>
+        <p className="text-sm md:text-base text-gray-400">Browse and manage all teams across your organization</p>
         <div className="mt-4 flex flex-wrap gap-2">
           <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
             {allTeams.length} Total Teams
@@ -103,8 +103,8 @@ const Teams: React.FC = () => {
         <CardHeader>
           <CardTitle className="flex items-center"><Search className="mr-2 h-5 w-5" />Search & Filters</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <CardContent className="p-4 md:p-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             <div className="group">
               <label className="block text-xs font-semibold uppercase tracking-wider text-textMuted mb-2 flex items-center transition-colors group-focus-within:text-brand-400">Search Teams</label>
               <div className="relative">
@@ -157,7 +157,7 @@ const Teams: React.FC = () => {
                 {team.teamLeadName && (
                   <div className="absolute inset-x-0 -top-3 h-1 bg-gradient-to-r from-transparent via-yellow-500 to-transparent opacity-50"></div>
                 )}
-                <div className="p-6">
+                <div className="p-4 md:p-6">
                   <div className="flex items-start justify-between mb-5">
                     <div className="flex items-center w-full">
                       <div className={`w-12 h-12 rounded-xl flex items-center justify-center mr-4 shadow-inner border border-white/10 shrink-0 ${team.teamLeadName ? 'bg-gradient-to-br from-yellow-500/20 to-yellow-600/20 text-yellow-500' : 'bg-white/5 text-textMuted group-hover:bg-brand-500/10 group-hover:text-brand-400 transition-colors'
@@ -212,7 +212,7 @@ const Teams: React.FC = () => {
                     </div>
                   </div>
 
-                  <Button onClick={() => navigate(`/team/${team.deptId}/${team.sectionId}/${team.id}`)} className="w-full flex items-center justify-center" size="sm" variant="secondary">
+                  <Button onClick={() => navigate(`/team/${team.deptId}/${team.sectionId}/${team.id}`)} className="w-full flex items-center justify-center p-3 md:p-2" size="sm" variant="secondary">
                     <Eye className="mr-2 h-4 w-4" /> View Full Team Info
                   </Button>
                 </div>
