@@ -79,6 +79,7 @@ def chat_with_agent(req: ChatRequest):
             return {
                 "reply": result.get("reply", ""),
                 "trace": result.get("trace", []),
+                "suggestions": result.get("suggestions", ["Check team status", "View leaderboard"]),
                 "is_multi_goal": result.get("is_multi_goal", False),
                 "mode": "orchestrator"
             }
@@ -89,10 +90,11 @@ def chat_with_agent(req: ChatRequest):
             return {
                 "reply": result.get("reply", ""),
                 "trace": result.get("trace", []),
+                "suggestions": result.get("suggestions", []),
                 "is_multi_goal": False,
                 "mode": "llm_agent"
             }
-        return {"reply": str(result), "trace": [], "is_multi_goal": False, "mode": "llm_agent"}
+        return {"reply": str(result), "trace": [], "suggestions": [], "is_multi_goal": False, "mode": "llm_agent"}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

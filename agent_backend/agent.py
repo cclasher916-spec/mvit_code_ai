@@ -35,16 +35,19 @@ def get_session_history(session_id: str) -> ChatMessageHistory:
 
 SYS_MSG = (
     "You are the Autonomous Campus AI Agent for MVIT Coding Team. "
-    "Your primary goal is to provide accurate, data-driven insights about students and the campus. "
+    "Your goal is to provide high-quality, data-driven insights about students and the campus in a friendly, professional, ChatGPT-like manner."
+    "\n\nSTYLE RULES:\n"
+    "1. Use Markdown for all formatting. Use **bold** for emphasis.\n"
+    "2. If listing 3 or more students/items, ALWAYS use a Markdown TABLE for clarity.\n"
+    "3. Keep responses concise but comprehensive. Use bullet points for steps.\n"
+    "4. If asked about a student, provide their ELO, Dept, and performance highlights.\n"
     "\n\nSTRICT RULES:\n"
-    "1. You are NOT a general chatbot. Focus on MVIT Coding Team data.\n"
-    "2. ALWAYS use 'get_member_progress' when asked about a specific student.\n"
-    "3. ALWAYS use 'get_most_inactive_members' for inactive/struggling/least active queries.\n"
-    "4. ALWAYS use 'get_team_leaderboard' for leaderboard/rankings/overall standings queries.\n"
-    "5. NEVER suggest adding, editing, or deleting database records. You are strictly READ-ONLY.\n"
-    "6. Give structured, professional answers with bold text and bullet points.\n"
-    "7. If a tool returns an error or no data, explain it gracefully. NEVER offer to change the database.\n"
-    "8. Maintain context: remember who the user was just talking about."
+    "1. Focus strictly on MVIT Coding Team data. Do not hallucinate external facts.\n"
+    "2. ALWAYS use 'get_member_progress' for specific student queries.\n"
+    "3. ALWAYS use 'get_most_inactive_members' for inactivity/struggling student scans.\n"
+    "4. ALWAYS use 'get_team_leaderboard' for rankings/leaderboards.\n"
+    "5. Maintain absolute privacy: do not share student contact details or internal IDs.\n"
+    "6. Maintain context: remember who the user was just talking about."
 )
 
 # --- Import tools ---
@@ -143,13 +146,21 @@ def run_agent(user_input: str, session_id: str = "default") -> dict:
 
             history.add_user_message(user_input)
             history.add_ai_message(final_content)
-            return {"reply": final_content, "trace": trace}
+            
+            # Dynamic suggestions based on tools used
+            suggestions = ["Get team analysis", "Send report", "Next steps?"]
+            
+            return {"reply": final_content, "trace": trace, "suggestions": suggestions}
 
         # No tools called — simple conversational response
         content = response.content or "I don't have enough context. Ask me about a specific student or campus topic."
         history.add_user_message(user_input)
         history.add_ai_message(content)
-        return {"reply": content, "trace": []}
+        
+        # Add basic suggestions for the user
+        suggestions = ["Who is the top performer?", "Show me inactive members", "Team leaderboard"]
+        
+        return {"reply": content, "trace": [], "suggestions": suggestions}
 
     except Exception as e:
-        return {"reply": f"Agent error: {e}", "trace": [{"step": "ERROR", "text": str(e)}]}
+        return {"reply": f"Agent error: {e}", "trace": [{"step": "ERROR", "text": str(e)}], "suggestions": []}
