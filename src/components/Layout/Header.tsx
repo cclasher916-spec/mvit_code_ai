@@ -166,38 +166,42 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
       {/* Mobile Search Overlay */}
       {isSearchOpen && (
         <div className="fixed inset-0 z-[100] bg-surface flex flex-col items-stretch animate-fade-in md:hidden">
-          <div className="flex items-center px-4 py-4 border-b border-border gap-4 bg-surface/95 backdrop-blur-md">
-            <Search className="h-5 w-5 text-brand-400 shrink-0" />
+          <div className="flex items-center px-4 py-3 border-b border-border gap-3 bg-surface/95 backdrop-blur-md">
+            <Search className="h-4 w-4 text-brand-400 shrink-0" />
             <input
               autoFocus
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search..."
+              placeholder="Search resources, teams..."
               enterKeyHint="search"
-              className="flex-1 bg-transparent border-none text-white focus:ring-0 text-lg"
+              className="flex-1 bg-transparent border-none text-white focus:ring-0 text-base"
             />
-            <Button variant="ghost" size="sm" onClick={() => setIsSearchOpen(false)}>
-              <X className="h-6 w-6 text-textMuted" />
+            <Button variant="ghost" size="sm" onClick={() => setIsSearchOpen(false)} className="h-8 w-8 p-0">
+              <X className="h-5 w-5 text-textMuted" />
             </Button>
           </div>
-          <div className="flex-1 overflow-y-auto divide-y divide-white/5 bg-background/50 safe-area-bottom">
+          <div className="flex-1 overflow-y-auto divide-y divide-white/5 bg-background/50 safe-area-bottom pb-20">
             {teams.length === 0 && members.length === 0 && query && (
                <div className="p-8 text-center text-textMuted">No results found for "{query}"</div>
             )}
             {teams.length > 0 && (
-              <div className="p-4">
-                <div className="text-[10px] uppercase font-bold tracking-widest text-brand-400 mb-4 px-2">Teams</div>
+              <div className="p-2">
+                <div className="text-[10px] uppercase font-black tracking-widest text-brand-400 mb-2 px-3 flex items-center gap-2">
+                   <span className="w-1 h-3 bg-brand-400 rounded-full"></span> Teams
+                </div>
                 {teams.map(team => (
                   <button 
                     key={team.id} 
                     type="button"
-                    className="w-full text-left p-4 mb-2 bg-surface/50 rounded-xl border border-border flex items-center gap-3 active:bg-brand-500/10 transition-colors" 
+                    className="w-full text-left px-3 py-2.5 mb-1 hover:bg-white/5 rounded-lg flex items-center transition-colors active:bg-brand-500/10 group" 
                     onClick={() => handleNavigate(`/team/${team.deptId}/${team.sectionId}/${team.id}`)}
                   >
-                    <div className="w-10 h-10 rounded-lg bg-brand-500/10 flex items-center justify-center text-brand-400 font-bold tracking-tighter text-sm shrink-0">T</div>
+                    <div className="w-8 h-8 rounded-md bg-white/5 border border-white/10 flex items-center justify-center mr-3 shrink-0 group-active:border-brand-500/30">
+                      <span className="text-sm font-medium text-textMuted">T</span>
+                    </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-bold text-white truncate">{team.name}</div>
+                      <div className="text-sm font-medium text-white truncate">{team.name}</div>
                       <div className="text-[10px] text-textMuted uppercase font-bold">{team.deptId} › {team.sectionId}</div>
                     </div>
                   </button>
@@ -205,18 +209,22 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
               </div>
             )}
             {members.length > 0 && (
-              <div className="p-4">
-                <div className="text-[10px] uppercase font-bold tracking-widest text-accent-purple mb-4 px-2">Members</div>
+              <div className="p-2">
+                <div className="text-[10px] uppercase font-black tracking-widest text-accent-purple mb-2 px-3 flex items-center gap-2">
+                   <span className="w-1 h-3 bg-accent-purple rounded-full"></span> Members
+                </div>
                 {members.map(member => (
                   <button 
                     key={member.memberId} 
                     type="button"
-                    className="w-full text-left p-4 mb-2 bg-surface/50 rounded-xl border border-border flex items-center gap-3 active:bg-brand-500/10 transition-colors" 
+                    className="w-full text-left px-3 py-2.5 mb-1 hover:bg-white/5 rounded-lg flex items-center transition-colors active:bg-brand-500/10 group" 
                     onClick={() => handleNavigate(`/individual/${member.memberId}`)}
                   >
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs shrink-0">{(member.memberName || 'U').substring(0, 2).toUpperCase()}</div>
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mr-3 shrink-0 shadow-inner">
+                      <span className="text-[11px] font-bold text-white">{(member.memberName || 'U').substring(0, 2).toUpperCase()}</span>
+                    </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-bold text-white truncate">{member.memberName}</div>
+                      <div className="text-sm font-medium text-white truncate">{member.memberName}</div>
                       <div className="text-[10px] text-textMuted uppercase font-bold">{member.teamId}</div>
                     </div>
                   </button>

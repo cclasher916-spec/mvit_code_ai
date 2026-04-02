@@ -73,17 +73,17 @@ const AllDepartments: React.FC = () => {
       <div className="absolute top-0 right-0 -m-8 w-64 h-64 bg-brand-500/10 rounded-full blur-3xl pointer-events-none -z-10"></div>
       
       {/* 🧭 TOP NAV + CONTEXT BAR  */}
-      <nav className="flex items-center justify-between bg-surface w-full p-4 rounded-2xl border border-border shadow-soft">
-        <div className="flex items-center space-x-2 text-sm text-textMuted">
-            <Link to="/" className="hover:text-textMain hover:bg-border/50 px-3 py-1.5 rounded transition-all font-bold">Dashboard</Link>
-            <ChevronRight className="h-4 w-4" />
-            <span className="font-black text-textMain flex items-center gap-2 px-3 py-1.5 bg-background border border-border/50 rounded shadow-sm">
+      <nav className="flex flex-col md:flex-row items-center justify-between bg-surface w-full p-4 rounded-2xl border border-border shadow-soft gap-4">
+        <div className="flex items-center space-x-2 text-sm text-textMuted w-full md:w-auto overflow-x-auto no-scrollbar">
+            <Link to="/" className="hover:text-textMain hover:bg-border/50 px-3 py-1.5 rounded transition-all font-bold shrink-0">Dashboard</Link>
+            <ChevronRight className="h-4 w-4 shrink-0" />
+            <span className="font-black text-textMain flex items-center gap-2 px-3 py-1.5 bg-background border border-border/50 rounded shadow-sm shrink-0">
                 <div className="w-2 h-2 rounded-full bg-brand-500 shadow-[0_0_10px_rgba(14,165,233,1)]"></div> 
                 All Departments 
             </span>
         </div>
         
-        <div className="flex items-center gap-3 w-full md:w-auto mt-4 md:mt-0">
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
             <div className="relative group flex-1 md:w-64">
                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-textMuted pointer-events-none group-focus-within:text-brand-500 transition-colors" />
                <input 
@@ -111,9 +111,9 @@ const AllDepartments: React.FC = () => {
       </nav>
 
       {/* HEADER OVERVIEW MAP */}
-      <div className="px-2">
-         <h1 className="text-3xl md:text-4xl font-black text-textMain tracking-tight">AI-Powered Department Intelligence Dashboard</h1>
-         <p className="text-textMuted mt-2 max-w-2xl font-medium text-sm">Real-time organizational telemetrics displaying structural velocities, dominance matrices, and macro-level risk factors.</p>
+      <div className="px-2 text-center md:text-left">
+         <h1 className="text-2xl md:text-4xl font-black text-textMain tracking-tight">Department Intelligence</h1>
+         <p className="text-textMuted mt-2 max-w-2xl font-medium text-xs md:text-sm mx-auto md:mx-0">Real-time organizational structural velocities, dominance matrices, and macro-level risk factors.</p>
       </div>
 
       {/* 📊 EXECUTIVE OVERVIEW ROW */}
@@ -150,7 +150,7 @@ const AllDepartments: React.FC = () => {
          <h2 className="text-lg font-black text-textMain uppercase tracking-widest flex items-center gap-2">
             Regional Hub Vectors
          </h2>
-         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
              {filteredDepartments.map(dept => (
                 <DepartmentCard key={dept.deptId} department={dept} onClick={() => setSelectedDepartment(dept)} />
              ))}

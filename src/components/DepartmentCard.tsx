@@ -25,31 +25,31 @@ const DepartmentCard: React.FC<DepartmentCardProps> = ({ department, onClick }) 
 
   return (
     <div 
-       className={`bg-surface border border-border rounded-2xl p-5 sm:p-6 transition-all group flex flex-col justify-between overflow-hidden relative ${shadowGlow}`}
+       className={`bg-surface border border-border rounded-2xl p-4 sm:p-5 transition-all group flex flex-col justify-between overflow-hidden relative ${shadowGlow}`}
     >
-      {/* Imbalance Warning Strip */}
-      {department.isImbalanced && (
-         <div className="absolute top-0 left-0 w-full bg-amber-500/10 text-amber-600 dark:text-amber-500 text-[9px] font-bold uppercase tracking-widest py-1 text-center flex items-center justify-center gap-1 border-b border-amber-500/20">
-            <AlertTriangle className="w-3 h-3" /> performance gap detected
-         </div>
-      )}
-
       {/* Header: Identity */}
       <div 
         onClick={onClick}
-        className={`flex justify-between items-start mb-6 cursor-pointer ${department.isImbalanced ? 'mt-4' : ''}`}
+        className="flex justify-between items-start mb-4 cursor-pointer"
       >
         <div className="min-w-0 pr-2">
-           <h3 className="text-xl sm:text-2xl font-black text-textMain tracking-tight group-hover:text-brand-500 transition-colors truncate">
+           <h3 className="text-lg sm:text-xl font-black text-textMain tracking-tight group-hover:text-brand-500 transition-colors truncate">
               {department.deptName}
            </h3>
-           <div className="flex items-center gap-2 mt-1.5 text-[10px] sm:text-xs font-bold text-textMuted uppercase tracking-wider">
-              <span className="flex items-center gap-1 shrink-0"><Building2 className="w-3 h-3"/> {department.totalTeams} Teams</span>
+           <div className="flex items-center gap-2 mt-1 text-[9px] sm:text-[10px] font-bold text-textMuted uppercase tracking-wider">
+              <span className="flex items-center gap-1 shrink-0"><Building2 className="w-3 h-3"/> {department.totalTeams}</span>
               <span className="w-1 h-1 rounded-full bg-border shrink-0"></span>
               <span className="flex items-center gap-1 shrink-0"><Users className="w-3 h-3"/> {department.totalMembers}</span>
            </div>
         </div>
-        <div className="shrink-0">{StatusBadge}</div>
+        <div className="flex flex-col items-end gap-1 shrink-0">
+          {StatusBadge}
+          {department.isImbalanced && (
+            <span className="text-[8px] uppercase font-black px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20 flex items-center gap-1">
+              <AlertTriangle className="w-2.5 h-2.5" /> Gap
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Core Metrics Grid */}
