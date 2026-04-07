@@ -65,6 +65,10 @@ def update_rnn_state(session_id: str, user_input: str, ai_response: str):
         # Fallback if network fails
         rnn_states[session_id] = prev_state
 
+import threading
+def update_rnn_state_async(session_id: str, user_input: str, ai_response: str):
+    threading.Thread(target=update_rnn_state, args=(session_id, user_input, ai_response), daemon=True).start()
+
 SYS_MSG = (
     "You are the Autonomous Campus AI Agent for MVIT Coding Team. "
     "Your goal is to provide high-quality, data-driven insights about students and the campus in a friendly, professional, ChatGPT-like manner."
@@ -185,7 +189,7 @@ def run_agent(user_input: str, session_id: str = "default") -> dict:
             history.add_ai_message(final_content)
             
             # Update RNN Hidden State (simulating recurrent memory update)
-            update_rnn_state(session_id, user_input, final_content)
+            update_rnn_state_async(session_id, user_input, final_content)
             
             # Truncate history to prevent context explosion and rely on RNN Memory
             if len(history.messages) > 10:
@@ -202,7 +206,7 @@ def run_agent(user_input: str, session_id: str = "default") -> dict:
         history.add_ai_message(content)
         
         # Update RNN Hidden State (simulating recurrent memory update)
-        update_rnn_state(session_id, user_input, content)
+        update_rnn_state_async(session_id, user_input, content)
         if len(history.messages) > 10:
             history.messages = history.messages[-10:]
         

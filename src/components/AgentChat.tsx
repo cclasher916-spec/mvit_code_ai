@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, Bot, Minus, Maximize2, Trash2, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Draggable from 'react-draggable';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { API_BASE_URL } from '../lib/apiConfig';
@@ -93,25 +94,24 @@ const AgentChat = () => {
 
       <AnimatePresence>
         {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: 50, scale: 0.9, x: 20 }}
-            animate={isMinimized ? { 
-              opacity: 1, y: 0, scale: 1, x: 0,
-              height: '64px', width: '280px', bottom: '24px', right: '24px'
-            } : { 
-              opacity: 1, y: 0, scale: 1, x: 0,
-              height: 'min(700px, calc(100% - 48px))', 
-              width: 'min(480px, calc(100% - 32px))',
-              bottom: '24px', right: '24px'
-            }}
-            exit={{ opacity: 0, y: 30, scale: 0.95 }}
-            className={`fixed z-[110] bg-gray-950/90 backdrop-blur-2xl rounded-3xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6)] border border-white/10 flex flex-col overflow-hidden 
-              md:max-h-[700px] md:max-w-[480px]
-              max-sm:inset-0 max-sm:w-full max-sm:h-full max-sm:rounded-none max-sm:border-0`}
-            style={isMinimized ? { height: '64px', width: '300px', borderRadius: '32px' } : {}}
-          >
-            {/* Header */}
-            <div className={`flex justify-between items-center px-5 flex-shrink-0 bg-gradient-to-r from-indigo-600/20 to-purple-600/20 border-b border-white/5 ${isMinimized ? 'h-16' : 'h-16'}`}>
+          <Draggable handle=".chat-header" bounds="body" defaultPosition={{x: 0, y: 0}}>
+            <motion.div
+              initial={{ opacity: 0, y: 50, scale: 0.9, x: 20 }}
+              animate={isMinimized ? { 
+                opacity: 1, y: 0, scale: 1, x: 0,
+                height: '64px', width: '280px'
+              } : { 
+                opacity: 1, y: 0, scale: 1, x: 0,
+                height: 'min(700px, calc(100% - 48px))', 
+                width: 'min(480px, calc(100vw - 32px))'
+              }}
+              exit={{ opacity: 0, y: 30, scale: 0.95 }}
+              className={`fixed z-[110] bg-gray-950/90 backdrop-blur-2xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6)] border border-white/10 flex flex-col overflow-hidden 
+                md:max-h-[700px] md:max-w-[480px] bottom-6 right-6
+                ${isMinimized ? 'rounded-[32px]' : 'rounded-3xl'}`}
+            >
+              {/* Header */}
+              <div className={`chat-header cursor-move flex justify-between items-center px-5 flex-shrink-0 bg-gradient-to-r from-indigo-600/20 to-purple-600/20 border-b border-white/5 h-16`}>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-2xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
                   <Bot size={22} className="text-white" />
@@ -234,7 +234,8 @@ const AgentChat = () => {
                 </div>
               </>
             )}
-          </motion.div>
+            </motion.div>
+          </Draggable>
         )}
       </AnimatePresence>
     </>

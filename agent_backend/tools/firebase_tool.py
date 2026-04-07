@@ -288,6 +288,7 @@ def get_team_overview_analytics(dummy: str = "") -> str:
     Use this when the user asks 'how is the team doing', 'team overview', or 'team stats'.
     """
     try:
+        db = get_db()
         if not db: return "Firebase not initialized."
         
         member_stats = []
