@@ -181,9 +181,17 @@ def run_agent(user_input: str, session_id: str = "default") -> dict:
 
             # Step 3: Get final response from LLM
             final = llm_with_tools.invoke(messages)
-            final_content = final.content if final.content else None
+            final_content = final.content if final.content else ""
 
-            if not final_content:
+            # Groq Llama-3 often says "Here is the data" but omits pasting the actual data.
+            # We enforce visibility by appending tool output if it isn't deeply embedded.
+            if tool_results:
+                for res in tool_results:
+                    if len(res) > 30 and ("🏆" in res or "🔴" in res or "📊" in res or "—" in res):
+                        if "🏆" not in final_content and "🔴" not in final_content and "📊" not in final_content:
+                            final_content += f"\n\n{res}"
+
+            if not final_content.strip():
                 final_content = tool_results[0] if tool_results else "I retrieved the data but couldn't format a response."
 
             history.add_user_message(user_input)
