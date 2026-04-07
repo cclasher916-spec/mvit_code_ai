@@ -342,6 +342,14 @@ def assign_personalized_task(member_name: str, task_description: str, difficulty
             
         if not member_doc:
             return f"Member '{member_name}' not found."
+
+        # Prevent duplicate assignment
+        # Check if there is already a pending task with the exact same description
+        existing_tasks = member_doc.reference.collection('agent_tasks').where('status', '==', 'pending').stream()
+        for t in existing_tasks:
+            t_data = t.to_dict()
+            if t_data.get("description") == task_description:
+                return f"Task '{task_description}' is already assigned and pending for {member_name}. Skipped duplicate."
             
         task_data = {
             "description": task_description,
@@ -426,6 +434,14 @@ def get_member_latest_stats(member_ref):
     except Exception as e:
          print(f"Error fetching stats for {member_ref.id}: {e}")
          return None
+
+def get_member_history(member_ref, limit_days=7):
+    """Fetches the past N daily_totals for a member ref for streak calculation."""
+    try:
+         docs = list(member_ref.collection('daily_totals').order_by('date', direction=firestore.Query.DESCENDING).limit(limit_days).stream())
+         return [d.to_dict() for d in docs]
+    except Exception as e:
+         return []
 
 def update_member_elo(member_ref, new_elo, failures=None):
     """Updates the ELO and consecutive failures for a member."""

@@ -7,7 +7,7 @@ import Card, { CardHeader, CardTitle, CardContent } from '../components/ui/Card'
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import LeaderboardTable from '../components/Tables/LeaderboardTable';
 import HierarchySelector from '../components/Navigation/HierarchySelector';
-import { Trophy, Medal, Award, Crown, ChevronRight, Users, Target } from 'lucide-react';
+import { Trophy, Medal, Award, Crown, ChevronRight, Users, TrendingUp } from 'lucide-react';
 
 const Leaderboard: React.FC = () => {
   const { data: globalData, hierarchy, loading: globalLoading } = useData();
@@ -28,12 +28,26 @@ const Leaderboard: React.FC = () => {
     // Client-side filtering instead of refetching from Firebase
     let filteredData = globalData;
 
-    if (viewLevel === 'department' && selectedDept) {
-      filteredData = globalData.filter((d: any) => d.deptId === selectedDept);
-    } else if (viewLevel === 'section' && selectedDept && selectedSection) {
-      filteredData = globalData.filter((d: any) => d.deptId === selectedDept && d.sectionId === selectedSection);
-    } else if (viewLevel === 'team' && selectedDept && selectedSection && selectedTeam) {
-      filteredData = globalData.filter((d: any) => d.deptId === selectedDept && d.sectionId === selectedSection && d.teamId === selectedTeam);
+    try {
+      if (viewLevel === 'department' && selectedDept) {
+        filteredData = globalData.filter((d: any) => 
+          String(d.deptId || '').toLowerCase() === selectedDept.toLowerCase()
+        );
+      } else if (viewLevel === 'section' && selectedDept && selectedSection) {
+        filteredData = globalData.filter((d: any) => 
+          String(d.deptId || '').toLowerCase() === selectedDept.toLowerCase() && 
+          String(d.sectionId || '').toLowerCase() === selectedSection.toLowerCase()
+        );
+      } else if (viewLevel === 'team' && selectedDept && selectedSection && selectedTeam) {
+        filteredData = globalData.filter((d: any) => 
+          String(d.deptId || '').toLowerCase() === selectedDept.toLowerCase() && 
+          String(d.sectionId || '').toLowerCase() === selectedSection.toLowerCase() && 
+          String(d.teamId || '').toLowerCase() === selectedTeam.toLowerCase()
+        );
+      }
+    } catch (err) {
+      console.error("Filter failed", err);
+      filteredData = [];
     }
 
     setData(filteredData);
@@ -143,117 +157,141 @@ const Leaderboard: React.FC = () => {
       </div>
 
       {topPerformers.length >= 3 && (
-        <div className="glass-card rounded-2xl relative overflow-hidden mt-6 md:mt-12 mb-4 md:mb-8 border border-yellow-500/20">
-          <div className="absolute inset-0 bg-gradient-to-b from-yellow-500/5 to-transparent pointer-events-none"></div>
-          <div className="p-4 md:p-6 border-b border-border/50 text-center">
-            <h3 className="text-2xl font-display font-bold text-white flex items-center justify-center gap-3">
-              <span className="text-2xl">🏆</span> Hall of Fame <span className="text-2xl">🏆</span>
-            </h3>
-          </div>
-          <div className="p-6 md:p-10">
-            <div className="flex flex-col md:flex-row justify-center items-end gap-6 md:gap-8 max-w-4xl mx-auto podium-container">
-
-              {/* Rank 2 - Silver */}
-              <div className="text-center w-full md:w-1/3 order-2 md:order-1 flex flex-col items-center">
-                <div className="w-20 h-20 md:w-24 md:h-24 bg-gradient-to-br from-slate-300 to-slate-500 rounded-full flex items-center justify-center mb-4 mx-auto shadow-[0_0_30px_rgba(148,163,184,0.3)] border-4 border-surface ring-2 ring-slate-400/50 z-10 transition-transform hover:scale-110 duration-300">
-                  <Medal className="h-10 w-10 md:h-12 md:w-12 text-white" />
-                </div>
-                <div className="glass-card border-t-4 border-t-slate-400 rounded-xl p-5 w-full relative overflow-hidden group">
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-500/10 to-transparent"></div>
-                  <div className="text-3xl font-display font-black text-slate-300 mb-2 opacity-80 group-hover:opacity-100 transition-opacity">#2</div>
-                  <Link to={`/individual/${topPerformers[1].memberId}`} className="font-bold text-white truncate text-lg block hover:text-brand-400 transition-colors">{topPerformers[1].memberName}</Link>
-                  {viewLevel !== 'team' && <Link to={`/team/${topPerformers[1].deptId}/${topPerformers[1].sectionId}/${topPerformers[1].teamId}`} className="text-xs text-textMuted truncate mt-1 block hover:text-brand-400 transition-colors">{topPerformers[1].teamId}</Link>}
-                  <div className="text-xl font-bold text-slate-300 mt-3 pt-3 border-t border-white/10">{topPerformers[1].totalSolved.toLocaleString()}</div>
-                  <div className="text-[10px] text-textMuted uppercase tracking-wider mt-1">Problems</div>
-                </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12 mb-8">
+           {/* Rank 2 - Silver */}
+           <div className="order-2 md:order-1 bg-surface border border-border rounded-[2rem] p-8 text-center relative overflow-hidden group hover:-translate-y-2 transition-all duration-500 shadow-xl border-t-slate-400">
+              <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                 <Medal className="w-24 h-24 text-slate-400" />
               </div>
-
-              {/* Rank 1 - Gold */}
-              <div className="text-center w-full md:w-1/3 order-1 md:order-2 flex flex-col items-center transform -translate-y-4 md:-translate-y-8 relative z-20">
-                <div className="absolute -top-12 opacity-50 w-full flex justify-center pointer-events-none">
-                  <div className="w-32 h-32 bg-yellow-500/30 rounded-full blur-3xl animate-pulse-slow"></div>
-                </div>
-                <div className="w-28 h-28 md:w-32 md:h-32 bg-gradient-to-br from-yellow-300 to-yellow-600 rounded-full flex items-center justify-center mb-4 mx-auto shadow-[0_0_40px_rgba(234,179,8,0.5)] border-4 border-surface ring-4 ring-yellow-500/50 relative transition-transform hover:scale-110 duration-300">
-                  <Crown className="h-14 w-14 md:h-16 md:w-16 text-white drop-shadow-md" />
-                  <div className="absolute -top-3 -right-3 w-10 h-10 bg-surface rounded-full flex items-center justify-center border-2 border-yellow-500">
-                    <span className="text-yellow-500 font-bold text-xl leading-none pt-1">🥇</span>
-                  </div>
-                </div>
-                <div className="glass-card border-t-4 border-t-yellow-500 rounded-xl p-6 w-full relative overflow-hidden shadow-2xl shadow-yellow-500/10 group">
-                  <div className="absolute inset-0 bg-gradient-to-t from-yellow-500/20 to-transparent"></div>
-                  <div className="text-4xl font-display font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-200 to-yellow-600 mb-2 drop-shadow-sm group-hover:scale-110 transition-transform">#1</div>
-                  <Link to={`/individual/${topPerformers[0].memberId}`} className="font-bold text-white text-xl truncate block hover:text-yellow-400 transition-colors uppercase">{topPerformers[0].memberName}</Link>
-                  {viewLevel !== 'team' && <Link to={`/team/${topPerformers[0].deptId}/${topPerformers[0].sectionId}/${topPerformers[0].teamId}`} className="text-sm text-yellow-200/80 truncate mt-1 font-medium block hover:text-yellow-400 transition-colors">{topPerformers[0].teamId}</Link>}
-                  <div className="text-3xl font-black text-yellow-400 mt-4 pt-4 border-t border-yellow-500/20 drop-shadow-md">{topPerformers[0].totalSolved.toLocaleString()}</div>
-                  <div className="text-xs text-yellow-500/80 uppercase tracking-wider mt-1 font-bold">Total Problems</div>
-                </div>
+              <div className="w-20 h-20 bg-slate-400/20 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg rotate-3 group-hover:rotate-0 transition-transform">
+                 <span className="text-3xl font-black text-slate-400">🥈</span>
               </div>
+              <div className="text-4xl font-black text-slate-400 mb-2 opacity-50">#2</div>
+              <Link to={`/individual/${topPerformers[1].memberId}`} className="text-xl font-bold text-textMain hover:text-brand-500 mb-1 block transition-colors">{topPerformers[1].memberName}</Link>
+              <div className="text-xs text-textMuted uppercase font-black tracking-widest mb-4">{topPerformers[1].teamId}</div>
+              <div className="text-3xl font-black text-textMain mb-1">{topPerformers[1].totalSolved}</div>
+              <div className="text-[10px] text-textMuted uppercase font-bold tracking-widest">Total Problems</div>
+           </div>
 
-              {/* Rank 3 - Bronze */}
-              <div className="text-center w-full md:w-1/3 order-3 flex flex-col items-center">
-                <div className="w-20 h-20 md:w-24 md:h-24 bg-gradient-to-br from-amber-600 to-amber-800 rounded-full flex items-center justify-center mb-4 mx-auto shadow-[0_0_30px_rgba(217,119,6,0.3)] border-4 border-surface ring-2 ring-amber-700/50 z-10 transition-transform hover:scale-110 duration-300">
-                  <Award className="h-10 w-10 md:h-12 md:w-12 text-white" />
-                </div>
-                <div className="glass-card border-t-4 border-t-amber-700 rounded-xl p-5 w-full relative overflow-hidden group">
-                  <div className="absolute inset-0 bg-gradient-to-t from-amber-700/10 to-transparent"></div>
-                  <div className="text-3xl font-display font-black text-amber-600 mb-2 opacity-80 group-hover:opacity-100 transition-opacity">#3</div>
-                  <Link to={`/individual/${topPerformers[2].memberId}`} className="font-bold text-white truncate text-lg block hover:text-amber-400 transition-colors">{topPerformers[2].memberName}</Link>
-                  {viewLevel !== 'team' && <Link to={`/team/${topPerformers[2].deptId}/${topPerformers[2].sectionId}/${topPerformers[2].teamId}`} className="text-xs text-textMuted truncate mt-1 block hover:text-amber-400 transition-colors">{topPerformers[2].teamId}</Link>}
-
-                  <div className="text-xl font-bold text-amber-500 mt-3 pt-3 border-t border-white/10">{topPerformers[2].totalSolved.toLocaleString()}</div>
-                  <div className="text-[10px] text-textMuted uppercase tracking-wider mt-1">Problems</div>
-                </div>
+           {/* Rank 1 - Gold */}
+           <div className="order-1 md:order-2 bg-gradient-to-br from-brand-600/20 via-surface to-background border-2 border-yellow-500/50 rounded-[2.5rem] p-10 text-center relative overflow-hidden group hover:-translate-y-3 transition-all duration-500 shadow-2xl scale-105 z-10">
+              <div className="absolute inset-0 bg-gradient-to-t from-yellow-500/5 to-transparent"></div>
+              <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
+                 <Crown className="w-32 h-32 text-yellow-500" />
               </div>
+              <div className="w-24 h-24 bg-yellow-500/20 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-[0_0_30px_rgba(234,179,8,0.3)] -rotate-3 group-hover:rotate-0 transition-transform">
+                 <span className="text-4xl font-black text-yellow-500">🥇</span>
+              </div>
+              <div className="text-5xl font-black text-yellow-500 mb-3 drop-shadow-sm">#1</div>
+              <Link to={`/individual/${topPerformers[0].memberId}`} className="text-2xl font-black text-textMain hover:text-brand-500 mb-1 block transition-colors uppercase tracking-tight">{topPerformers[0].memberName}</Link>
+              <div className="text-sm text-yellow-500/80 uppercase font-black tracking-widest mb-6">{topPerformers[0].teamId}</div>
+              <div className="text-4xl font-black text-textMain mb-1">{topPerformers[0].totalSolved}</div>
+              <div className="text-[11px] text-textMuted uppercase font-black tracking-widest">Master Score</div>
+           </div>
 
-            </div>
-          </div>
+           {/* Rank 3 - Bronze */}
+           <div className="order-3 bg-surface border border-border rounded-[2rem] p-8 text-center relative overflow-hidden group hover:-translate-y-2 transition-all duration-500 shadow-xl border-t-amber-600">
+              <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                 <Award className="w-24 h-24 text-amber-600" />
+              </div>
+              <div className="w-20 h-20 bg-amber-600/20 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg -rotate-3 group-hover:rotate-0 transition-transform">
+                 <span className="text-3xl font-black text-amber-600">🥉</span>
+              </div>
+              <div className="text-4xl font-black text-amber-600 mb-2 opacity-50">#3</div>
+              <Link to={`/individual/${topPerformers[2].memberId}`} className="text-xl font-bold text-textMain hover:text-brand-500 mb-1 block transition-colors">{topPerformers[2].memberName}</Link>
+              <div className="text-xs text-textMuted uppercase font-black tracking-widest mb-4">{topPerformers[2].teamId}</div>
+              <div className="text-3xl font-black text-textMain mb-1">{topPerformers[2].totalSolved}</div>
+              <div className="text-[10px] text-textMuted uppercase font-bold tracking-widest">Total Problems</div>
+           </div>
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-        <Card hover className="bg-gradient-to-br from-blue-500/10 to-transparent border-blue-500/20 group relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/10 rounded-full blur-xl -mr-10 -mt-10 transition-transform group-hover:scale-150 duration-700 pointer-events-none"></div>
-          <div className="flex items-center p-4 md:p-6 relative z-10">
-            <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 mr-4"><Users className="h-6 w-6 text-blue-400" /></div>
-            <div>
-              <p className="text-[10px] md:text-xs font-semibold uppercase tracking-wider text-textMuted mb-1">Total Participants</p>
-              <p className="text-2xl md:text-3xl font-display font-bold text-white">{leaderboard.length}</p>
-            </div>
-          </div>
-        </Card>
-        <Card hover className="bg-gradient-to-br from-green-500/10 to-transparent border-green-500/20 group relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-green-500/10 rounded-full blur-xl -mr-10 -mt-10 transition-transform group-hover:scale-150 duration-700 pointer-events-none"></div>
-          <div className="flex items-center p-4 md:p-6 relative z-10">
-            <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20 mr-4"><Target className="h-6 w-6 text-green-400" /></div>
-            <div>
-              <p className="text-[10px] md:text-xs font-semibold uppercase tracking-wider text-textMuted mb-1">Total Problems</p>
-              <p className="text-2xl md:text-3xl font-display font-bold text-white">{leaderboard.reduce((sum, entry) => sum + entry.totalSolved, 0).toLocaleString()}</p>
-            </div>
-          </div>
-        </Card>
-        <Card hover className="bg-gradient-to-br from-purple-500/10 to-transparent border-purple-500/20 group relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/10 rounded-full blur-xl -mr-10 -mt-10 transition-transform group-hover:scale-150 duration-700 pointer-events-none"></div>
-          <div className="flex items-center p-4 md:p-6 relative z-10">
-            <div className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/20 mr-4"><Crown className="h-6 w-6 text-purple-400" /></div>
-            <div>
-              <p className="text-[10px] md:text-xs font-semibold uppercase tracking-wider text-textMuted mb-1">Team Leaders</p>
-              <p className="text-2xl md:text-3xl font-display font-bold text-white">{leaderboard.filter(e => e.isTeamLead).length}</p>
-            </div>
-          </div>
-        </Card>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2">
+          <Card className="h-full">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="flex items-center"><Trophy className="mr-2 h-5 w-5 text-yellow-500" /> Performance Standings</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <LeaderboardTable data={leaderboard} showTeamColumn={viewLevel !== 'team'} />
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Movers Section */}
+        <div className="space-y-6">
+           <div className="bg-surface border border-border rounded-[2rem] p-8 shadow-soft relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-4 opacity-5">
+                 <TrendingUp className="w-24 h-24 text-green-500" />
+              </div>
+              <h3 className="text-lg font-black text-textMain uppercase tracking-widest flex items-center gap-2 mb-6">
+                 <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                 Fastest Risers
+              </h3>
+              <div className="space-y-4">
+                 {leaderboard.filter(m => (m.totalDailyIncrease || 0) > 10).slice(0, 5).map((m) => (
+                    <div key={m.memberId} className="flex items-center justify-between p-4 bg-background/50 rounded-2xl border border-border/50 group hover:border-green-500/30 transition-all">
+                       <div className="flex items-center gap-3">
+                          <div className="text-xs font-black text-green-500">+{m.totalDailyIncrease}</div>
+                          <div>
+                             <Link to={`/individual/${m.memberId}`} className="text-sm font-bold text-textMain hover:text-brand-500 transition-colors">{m.memberName}</Link>
+                             <div className="text-[10px] text-textMuted uppercase font-bold">{m.deptId}</div>
+                          </div>
+                       </div>
+                       <div className="text-green-500 text-sm font-black">↑</div>
+                    </div>
+                 ))}
+                 {leaderboard.filter(m => (m.totalDailyIncrease || 0) > 10).length === 0 && (
+                    <div className="text-center py-8 text-textMuted text-xs font-bold uppercase tracking-widest">Awaiting daily updates...</div>
+                 )}
+              </div>
+           </div>
+
+           {/* Quick Stats Summary */}
+           <div className="grid grid-cols-1 gap-4">
+              <div className="bg-surface border border-border rounded-[2rem] p-6 flex items-center gap-4 group hover:border-brand-500/30 transition-all">
+                 <div className="w-12 h-12 bg-brand-500/10 rounded-2xl flex items-center justify-center">
+                    <Users className="w-6 h-6 text-brand-500" />
+                 </div>
+                 <div>
+                    <div className="text-2xl font-black text-textMain">{leaderboard.length}</div>
+                    <div className="text-[10px] text-textMuted uppercase font-bold">Total Competing</div>
+                 </div>
+              </div>
+              <div className="bg-surface border border-border rounded-[2rem] p-6 flex items-center gap-4 group hover:border-amber-500/30 transition-all">
+                 <div className="w-12 h-12 bg-amber-500/10 rounded-2xl flex items-center justify-center">
+                    <Crown className="w-6 h-6 text-amber-500" />
+                 </div>
+                 <div>
+                    <div className="text-2xl font-black text-textMain">{leaderboard.filter(e => e.isTeamLead).length}</div>
+                    <div className="text-[10px] text-textMuted uppercase font-bold">Team Leaders</div>
+                 </div>
+              </div>
+           </div>
+        </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center"><Trophy className="mr-2 h-5 w-5" />Complete Rankings</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <LeaderboardTable data={leaderboard} showTeamColumn={viewLevel !== 'team'} />
-        </CardContent>
-      </Card>
-
       {leaderboard.length === 0 && (
-        <Card><CardContent className="text-center py-12"><Trophy className="mx-auto h-12 w-12 text-gray-400 mb-4" /><h3 className="text-lg font-medium text-gray-900 mb-2">No data available</h3><p className="text-gray-600">No performance data found for the selected scope.</p></CardContent></Card>
+        <Card className="border-dashed border-2 border-border/50">
+          <CardContent className="text-center py-16">
+            <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Trophy className="h-10 w-10 text-textMuted opacity-20" />
+            </div>
+            <h3 className="text-xl font-bold text-white mb-2">No data found for this scope</h3>
+            <p className="text-textMuted max-w-sm mx-auto mb-8">We couldn't find any performance records matching your current filters. Try selecting a different department or view level.</p>
+            <button 
+              onClick={() => {
+                setViewLevel('global');
+                setSelectedDept('');
+                setSelectedSection('');
+                setSelectedTeam('');
+              }}
+              className="px-6 py-2.5 bg-gradient-hero text-white rounded-xl font-bold shadow-lg shadow-brand-500/20 hover:scale-105 transition-transform"
+            >
+              Reset to Global View
+            </button>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

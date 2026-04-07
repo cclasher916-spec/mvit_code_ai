@@ -158,10 +158,14 @@ def flow_performance_intel(target: str, hint: str, ctx: RunContext, trace: list)
 # ─────────────────────────────────────────────
 def flow_inactivity_recovery(target: str, hint: str, ctx: RunContext, trace: list) -> str:
     trace.append({"step": "GOAL", "text": "Identify inactive members and trigger recovery actions"})
-    trace.append({"step": "PLAN", "text": "1. Get last activity dates  2. Days>7 → escalate  3. Days 3-7 → assign task  4. Days<3 → note only"})
+    trace.append({"step": "PLAN", "text": "1. Analyze historical activity  2. Missing days>7 → escalate  3. Missing days 3-7 → assign recovery task"})
 
-    today = date.today()
+    from tools.firebase_tool import get_member_history
+    from behavior_analyzer import BehaviorAnalyzer
+    from problem_bank import select_learning_path
+
     results = []
+    targets = []
 
     if target.lower() != "team":
         # Single student check
@@ -170,58 +174,58 @@ def flow_inactivity_recovery(target: str, hint: str, ctx: RunContext, trace: lis
             trace.append({"step": "RESULT", "text": f"Student '{target}' not found."})
             trace.append({"step": "REVIEW", "text": "⚠️ Cannot process — student missing."})
             return f"Student '{target}' not found."
-        doc, data, stats = member
-        targets = [(doc, data, stats)]
+        doc, data, _ = member # we will pull history separately
+        targets = [(doc, data)]
     else:
         # Full team scan
         all_members = get_all_members_fast()
-        targets = []
         for m in all_members:
-            stats = get_member_latest_stats(m["ref"]) or {}
-            targets.append((None, m["data"], stats))
+            targets.append((m["ref"], m["data"]))
 
-    trace.append({"step": "ACTION", "text": f"Scanning {len(targets)} member(s) for inactivity..."})
+    trace.append({"step": "ACTION", "text": f"Scanning {len(targets)} member(s) history for true inactivity..."})
 
     actioned = 0
-    for _, data, stats in targets:
+    for doc_ref, data in targets:
         name = data.get("name", "Unknown")
-        last_date_str = stats.get("date", "")
-        try:
-            last = datetime.strptime(last_date_str, "%Y-%m-%d").date()
-            days_inactive = (today - last).days
-        except Exception:
-            days_inactive = 999
+        
+        # Determine actual inactivity by analyzing up to 14 days of historical daily_totals
+        history = get_member_history(doc_ref, limit_days=14)
+        if not history:
+            days_inactive = 999 
+            score_data = {}
+        else:
+            analyzer = BehaviorAnalyzer(history)
+            score_data = analyzer.analyze()
+            days_inactive = score_data.get("metrics", {}).get("inactivity_streak", 0)
 
         if days_inactive < 3:
             if target.lower() != "team":
-                trace.append({"step": "REVIEW", "text": f"✅ {name} is currently active ({days_inactive} days since last sync)."})
-                results.append(f"{name} is already active ({days_inactive}d). No recovery needed.")
+                trace.append({"step": "REVIEW", "text": f"✅ {name} is active (Under {days_inactive} days inactive)."})
+                results.append(f"{name} is active ({days_inactive}d). No recovery needed.")
             continue  # Active — skip
 
-        trace.append({"step": "RESULT", "text": f"{name}: {days_inactive} days inactive"})
+        trace.append({"step": "RESULT", "text": f"{name}: {days_inactive} days practically inactive"})
 
         if days_inactive > 7:
             # Decision: escalate + assign task
             trace.append({"step": "REVIEW", "text": f"🔴 {name} > 7 days inactive → ESCALATE + assign task"})
             _run_step(
                 escalate_to_mentor,
-                {"student_name": name, "issue_description": f"{name} has been inactive for {days_inactive} days. Immediate intervention required."},
+                {"student_name": name, "issue_description": f"{name} has not actually coded for {days_inactive} days (though the scraper runs daily). Immediate intervention required."},
                 trace, f"escalate_to_mentor({name})"
             )
         else:
             trace.append({"step": "REVIEW", "text": f"🟡 {name} {days_inactive} days inactive → assign task"})
 
         # Assign a recovery path
-        from behavior_analyzer import BehaviorAnalyzer
-        from problem_bank import select_learning_path
-        score = BehaviorAnalyzer([stats]).analyze().get("performance_score", 0.0)
-        path = select_learning_path(score, flags=["drop_pattern"])
+        core_score = score_data.get("performance_score", 0.0) if score_data else 0.0
+        path = select_learning_path(core_score, flags=["drop_pattern"])
         _run_step(
             assign_personalized_task,
             {"member_name": name, "task_description": path['formatted_description'], "difficulty": path['expected_difficulty']},
             trace, f"assign_task({name})",
             retry_fn=assign_personalized_task,
-            retry_args={"member_name": name, "task_description": "Solve 1 Easy LeetCode problem to restart activity.", "difficulty": "Easy"}
+            retry_args={"member_name": name, "task_description": "Solve 1 Easy array problem to restart activity.", "difficulty": "Easy"}
         )
         results.append(f"{name} ({days_inactive}d inactive) → task assigned")
         actioned += 1
@@ -231,7 +235,7 @@ def flow_inactivity_recovery(target: str, hint: str, ctx: RunContext, trace: lis
 
     if not results:
         trace.append({"step": "REVIEW", "text": "✅ No members with critical inactivity found."})
-        return "No members with >3 days of inactivity. Team is active! ✅"
+        return "No members with >3 days of actual inactivity. Team is active! ✅"
 
     trace.append({"step": "REVIEW", "text": f"✅ Recovery complete: {actioned} member(s) actioned."})
     return f"**Inactivity Recovery Complete**\n" + "\n".join(f"• {r}" for r in results)

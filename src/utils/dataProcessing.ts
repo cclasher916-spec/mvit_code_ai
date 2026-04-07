@@ -81,6 +81,7 @@ export function createLeaderboard(data: DailyTotal[]) {
       skillrackTotal: m.skillrackTotal,
       codechefTotal: m.codechefTotal,
       hackerrankTotal: m.hackerrankTotal,
+      totalDailyIncrease: m.totalDailyIncrease,
       isTeamLead: m.isTeamLead,
       assignedTeamLead: m.assignedTeamLead
     };

@@ -17,21 +17,53 @@ from dotenv import load_dotenv
 import os
 import json
 
+try:
+    from langchain_core.caches import InMemoryCache
+    import langchain
+    langchain.llm_cache = InMemoryCache()
+except ImportError:
+    pass
+
 # Load environment variables from the root .env file
 dotenv_path = os.path.join(os.path.dirname(__file__), '../.env')
 load_dotenv(dotenv_path=dotenv_path)
 
 # Memory storage (in-memory for now, could be persisted to Redis/DB later)
 memory_store = {}
+rnn_states = {} # Stores the hidden state string for each session
 
 def get_llm():
     """Lazily initialize LLM to keep startup fast."""
+    # TurboQuant optimization: using cache
     return ChatGroq(model_name="llama-3.3-70b-versatile", temperature=0)
 
 def get_session_history(session_id: str) -> ChatMessageHistory:
+    """Returns typical chat history, used for recent tool calls but managed by RNN."""
     if session_id not in memory_store:
         memory_store[session_id] = ChatMessageHistory()
     return memory_store[session_id]
+
+def update_rnn_state(session_id: str, user_input: str, ai_response: str):
+    """
+    Simulates an RNN cell: extracts the emotional and contextual state.
+    Hidden_State(t) = Neural_Function(Hidden_State(t-1) + User_Input(t) + AI_Response(t))
+    """
+    prev_state = rnn_states.get(session_id, "Neutral, newly initialized conversation. You are a friendly helping agent.")
+    prompt = (
+        f"Update the short hidden state summarizing the user's mood, goals, and context "
+        f"given the prior state, user input, and your response:\n"
+        f"- Prior State: {prev_state}\n"
+        f"- User Input: {user_input}\n"
+        f"- AI Response: {ai_response}\n\n"
+        f"Return ONLY a 1-2 sentence descriptive state summary directing the agent's tone."
+    )
+    llm = get_llm()
+    try:
+        new_state = llm.invoke([HumanMessage(content=prompt)]).content
+        rnn_states[session_id] = new_state
+    except Exception:
+        # Fallback if network fails
+        rnn_states[session_id] = prev_state
 
 SYS_MSG = (
     "You are the Autonomous Campus AI Agent for MVIT Coding Team. "
@@ -87,7 +119,12 @@ TOOL_GOALS = {
 
 def run_agent(user_input: str, session_id: str = "default") -> dict:
     history = get_session_history(session_id)
-    messages = [SystemMessage(content=SYS_MSG)] + history.messages + [HumanMessage(content=user_input)]
+    
+    # Inject the RNN Hidden State to behaviorally prompt the agent to be friendly and contextual
+    current_rnn_state = rnn_states.get(session_id, "Neutral. Be a highly empathetic and friendly helping agent.")
+    dynamic_sys_msg = SYS_MSG + f"\n\nCURRENT USER STATE (RNN MEMORY): {current_rnn_state}"
+    
+    messages = [SystemMessage(content=dynamic_sys_msg)] + history.messages + [HumanMessage(content=user_input)]
 
     # --- Reasoning trace ---
     trace = []
@@ -147,6 +184,13 @@ def run_agent(user_input: str, session_id: str = "default") -> dict:
             history.add_user_message(user_input)
             history.add_ai_message(final_content)
             
+            # Update RNN Hidden State (simulating recurrent memory update)
+            update_rnn_state(session_id, user_input, final_content)
+            
+            # Truncate history to prevent context explosion and rely on RNN Memory
+            if len(history.messages) > 10:
+                history.messages = history.messages[-10:]
+            
             # Dynamic suggestions based on tools used
             suggestions = ["Get team analysis", "Send report", "Next steps?"]
             
@@ -156,6 +200,11 @@ def run_agent(user_input: str, session_id: str = "default") -> dict:
         content = response.content or "I don't have enough context. Ask me about a specific student or campus topic."
         history.add_user_message(user_input)
         history.add_ai_message(content)
+        
+        # Update RNN Hidden State (simulating recurrent memory update)
+        update_rnn_state(session_id, user_input, content)
+        if len(history.messages) > 10:
+            history.messages = history.messages[-10:]
         
         # Add basic suggestions for the user
         suggestions = ["Who is the top performer?", "Show me inactive members", "Team leaderboard"]

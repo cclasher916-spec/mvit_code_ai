@@ -1,14 +1,14 @@
 import React, { useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
-  Building2,
   Users,
   BarChart3,
   Trophy,
   Settings,
   X,
   Home,
-  GitBranch,
+  LayoutGrid,
+  Database,
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import Button from '../ui/Button';
@@ -32,11 +32,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
   const navigation = [
     { name: 'Dashboard', href: '/', icon: Home },
-    { name: 'All Departments', href: '/all-departments', icon: Building2 },
+    { name: 'Departments', href: '/all-departments', icon: LayoutGrid },
     { name: 'Analytics', href: '/analytics', icon: BarChart3 },
     { name: 'Leaderboard', href: '/leaderboard', icon: Trophy },
     { name: 'Teams', href: '/teams', icon: Users },
-    { name: 'Repositories', href: '/repositories', icon: GitBranch },
+    { name: 'Student Data', href: '/leaderboard', icon: Database },
     { name: 'Settings', href: '/settings', icon: Settings },
   ];
 
@@ -53,11 +53,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         <div className="flex items-center justify-between p-6 border-b border-border">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-gradient-hero rounded-xl flex items-center justify-center shadow-lg shadow-brand-500/20">
-              <Building2 className="h-5 w-5 text-white" />
+              <LayoutGrid className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h1 className="font-bold text-textMain text-lg tracking-tight">Autonomous Core</h1>
-              <p className="text-xs text-brand-400 font-medium tracking-wide uppercase">Skill Platform</p>
+              <h1 className="font-bold text-textMain text-lg tracking-tight">Placement System</h1>
+              <p className="text-xs text-brand-400 font-medium tracking-wide uppercase">Readiness Tracker</p>
             </div>
           </div>
 

@@ -158,7 +158,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
             <div className="h-8 w-8 rounded-full bg-gradient-hero flex items-center justify-center shadow-lg border border-white/20">
               <User className="h-4 w-4 text-white" />
             </div>
-            <span className="text-sm font-medium text-white hidden md:block">Admin</span>
+            <span className="text-sm font-medium text-white hidden md:block">Profile</span>
           </button>
         </div>
       </div>

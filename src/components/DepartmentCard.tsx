@@ -13,14 +13,14 @@ const DepartmentCard: React.FC<DepartmentCardProps> = ({ department, onClick }) 
   let shadowGlow = 'hover:border-border/50';
 
   if (department.status === 'Elite') {
-    StatusBadge = <span className="text-[10px] uppercase tracking-widest font-black px-2 py-0.5 rounded bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20">🔥 Elite</span>;
-    shadowGlow = 'hover:border-green-500/30 hover:shadow-[0_0_20px_rgba(34,197,94,0.15)]';
+    StatusBadge = <span className="text-[10px] uppercase tracking-widest font-black px-3 py-1 rounded-full bg-green-500/10 text-green-400 border border-green-500/30 shadow-[0_0_10px_rgba(34,197,94,0.1)]">🔥 Elite Readiness</span>;
+    shadowGlow = 'hover:border-green-500/40 hover:shadow-[0_0_30px_rgba(34,197,94,0.15)]';
   } else if (department.status === 'Good') {
-    StatusBadge = <span className="text-[10px] uppercase tracking-widest font-black px-2 py-0.5 rounded bg-brand-500/10 text-brand-600 dark:text-brand-400 border border-brand-500/20">⚡ Good</span>;
-    shadowGlow = 'hover:border-brand-500/30 hover:shadow-[0_0_20px_rgba(14,165,233,0.15)]';
+    StatusBadge = <span className="text-[10px] uppercase tracking-widest font-black px-3 py-1 rounded-full bg-brand-500/10 text-brand-400 border border-brand-500/30 shadow-[0_0_10px_rgba(14,165,233,0.1)]">⚡ Growth Track</span>;
+    shadowGlow = 'hover:border-brand-500/40 hover:shadow-[0_0_30px_rgba(14,165,233,0.15)]';
   } else if (department.status === 'Risk') {
-    StatusBadge = <span className="text-[10px] uppercase tracking-widest font-black px-2 py-0.5 rounded bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20">⚠️ Risk</span>;
-    shadowGlow = 'hover:border-red-500/30 hover:shadow-[0_0_20px_rgba(239,68,68,0.15)]';
+    StatusBadge = <span className="text-[10px] uppercase tracking-widest font-black px-3 py-1 rounded-full bg-red-500/10 text-red-400 border border-red-500/30 shadow-[0_0_10px_rgba(239,68,68,0.1)]">⚠️ Attention</span>;
+    shadowGlow = 'hover:border-red-500/40 hover:shadow-[0_0_30px_rgba(239,68,68,0.15)]';
   }
 
   return (
@@ -68,8 +68,8 @@ const DepartmentCard: React.FC<DepartmentCardProps> = ({ department, onClick }) 
       </div>
 
       {/* Visual Indicator */}
-      <div className="mb-6 bg-background rounded-lg p-3 border border-border">
-         <p className="text-[9px] sm:text-[10px] text-textMuted uppercase font-bold tracking-widest mb-2 flex items-center gap-1.5"><Activity className="w-3 h-3"/> Velocity</p>
+      <div className="mb-6 bg-background/50 rounded-xl p-3 border border-border/50">
+         <p className="text-[9px] text-textMuted uppercase font-black tracking-widest mb-2 flex items-center gap-1.5"><Activity className="w-3 h-3 text-brand-500"/> Performance Velocity</p>
          <PerformanceBar value={department.avgPerMember} maxValue={800} />
       </div>
 

@@ -15,6 +15,7 @@ const Teams = React.lazy(() => import('./pages/Teams'));
 const Leaderboard = React.lazy(() => import('./pages/Leaderboard'));
 const Settings = React.lazy(() => import('./pages/Settings'));
 const IndividualDashboard = React.lazy(() => import('./pages/IndividualDashboard'));
+const StudentData = React.lazy(() => import('./pages/StudentData'));
 const Repositories = React.lazy(() => import('./pages/Repositories'));
 const AgentAdmin = React.lazy(() => import('./pages/AgentAdmin'));
 
@@ -54,6 +55,7 @@ function App() {
                         <Route path="/leaderboard" element={<Leaderboard />} />
                         <Route path="/settings" element={<Settings />} />
                         <Route path="/individual/:memberId" element={<IndividualDashboard />} />
+                        <Route path="/student-data" element={<StudentData />} />
                         <Route path="/settings/admin" element={<AgentAdmin />} />
                         <Route path="/agent-admin" element={<AgentAdmin />} />
                       </Routes>

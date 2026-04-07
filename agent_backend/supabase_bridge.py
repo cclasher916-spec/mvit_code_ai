@@ -278,7 +278,7 @@ class SupabaseBridge:
     # ─────────────────────────────────────────
     # 4. Mark a task as completed
     # ─────────────────────────────────────────
-    def mark_task_completed(self, member_name: str, title: str):
+    def mark_task_completed(self, member_name: str, title: str, feedback: str = None):
         """
         Called by the autonomous verification loop when LeetCode confirms
         the student solved the assigned problem.
@@ -292,9 +292,17 @@ class SupabaseBridge:
 
         now = datetime.now(timezone.utc).isoformat()
         try:
+            # We fetch the task first to append feedback if provided
+            query = self.client.table("agent_tasks").select("description").eq("student_id", student_id).eq("title", title).eq("status", "pending").execute()
+            
+            updates = {"status": "completed", "completed_at": now}
+            if feedback and query.data:
+                orig_desc = query.data[0].get("description", "")
+                updates["description"] = f"{orig_desc}\n\n{feedback}".strip()
+                
             # Update the most recent pending task matching title
             self.client.table("agent_tasks").update(
-                {"status": "completed", "completed_at": now}
+                updates
             ).eq("student_id", student_id).eq("title", title).eq("status", "pending").execute()
             print(f"   ✅ [Supabase] agent_tasks completed → {member_name} | '{title}'")
         except Exception as e:

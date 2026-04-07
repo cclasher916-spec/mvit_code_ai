@@ -307,17 +307,17 @@ def run_loop(proactive_actions: list = None):
             if platform == 'leetcode' and lc_url:
                  is_verified = verify_leetcode_completion(lc_url, problem_title, assigned_date)
                  if is_verified:
-                     ver_log = f"[AI CHECK] User: {name} | Task: {problem_title} | Status: Completed ✔️ | Verified via LeetCode profile"
+                     ver_log = f"[AI CHECK] User: {name} | Task: {problem_title} | Status: Completed ✔️ | Verified via LeetCode profile\n\n🎉 Excellent work! Your solution was verified. Keep up the great pace!"
                      log_msg(ver_log)
                      # Update ELO via Logistic Function
                      new_elo = calculate_elo(elo, td.get('difficulty', 'Medium'), 1)
                      update_task_status(task_ref, "completed", actual_time=str(now), verification_log=ver_log)
                      update_member_elo(member_ref, new_elo, failures=0)
                      log_msg(f"[Update] {name} succeeded! ELO increased from {elo} to {new_elo}.")
-                     # ── Dual-Write: mark completed in Supabase mobile app ──
+                     # ── Dual-Write: mark completed in Supabase mobile app with appreciation ──
                      _sb = _get_sb()
                      if _sb:
-                         _sb.mark_task_completed(name, problem_title)
+                         _sb.mark_task_completed(name, problem_title, feedback="🎉 Excellent work! Your solution was verified. Keep up the great pace!")
                      continue
                      
             # Evaluate Deadline Failure

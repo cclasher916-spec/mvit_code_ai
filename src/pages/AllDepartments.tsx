@@ -112,32 +112,32 @@ const AllDepartments: React.FC = () => {
 
       {/* HEADER OVERVIEW MAP */}
       <div className="px-2 text-center md:text-left">
-         <h1 className="text-2xl md:text-4xl font-black text-textMain tracking-tight">Department Intelligence</h1>
-         <p className="text-textMuted mt-2 max-w-2xl font-medium text-xs md:text-sm mx-auto md:mx-0">Real-time organizational structural velocities, dominance matrices, and macro-level risk factors.</p>
+         <h1 className="text-2xl md:text-4xl font-black text-textMain tracking-tight">Department Intelligence & Placement Readiness</h1>
+         <p className="text-textMuted mt-2 max-w-2xl font-medium text-xs md:text-sm mx-auto md:mx-0">Real-time organizational performance metrics, placement eligibility tracking, and department-wise growth analytics.</p>
       </div>
 
       {/* 📊 EXECUTIVE OVERVIEW ROW */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard 
-            title="Total Framework Hubs" 
+            title="Training Departments" 
             value={totalDepartments} 
             icon={Building2} 
             colorTheme="brand" 
         />
         <StatCard 
-            title="Total Active Squads" 
+            title="Total Student Squads" 
             value={totalTeamsGlobally} 
             icon={LayoutGrid} 
             colorTheme="blue" 
         />
         <StatCard 
-            title="Active Org Roster" 
+            title="Placement-Ready Students" 
             value={activeMembersAggregated} 
             icon={Users} 
             colorTheme="purple" 
         />
         <StatCard 
-            title="Vanguard Department" 
+            title="Top Performing Dept" 
             value={topDepartmentString} 
             icon={Trophy} 
             colorTheme="amber" 
@@ -145,23 +145,42 @@ const AllDepartments: React.FC = () => {
         />
       </div>
 
-      {/* 🧬 DEPARTMENT INTELLIGENCE GRID (Cards replacing standard lists) */}
-      <div className="mt-8 px-2 space-y-4">
-         <h2 className="text-lg font-black text-textMain uppercase tracking-widest flex items-center gap-2">
-            Regional Hub Vectors
-         </h2>
-         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-             {filteredDepartments.map(dept => (
-                <DepartmentCard key={dept.deptId} department={dept} onClick={() => setSelectedDepartment(dept)} />
-             ))}
-         </div>
+      {/* 🧬 DEPARTMENT INTELLIGENCE GRID - Grouped by Status */}
+      <div className="mt-12 space-y-12">
+        {['Elite', 'Good', 'Risk'].map(status => {
+          const depts = filteredDepartments.filter(d => d.status === status);
+          if (depts.length === 0) return null;
+
+          const sectionTitle = status === 'Elite' ? 'Elite Readiness' : status === 'Good' ? 'Growth Track' : 'Attention Required';
+          const sectionColor = status === 'Elite' ? 'text-green-500' : status === 'Good' ? 'text-brand-500' : 'text-red-500';
+          const sectionBadge = status === 'Elite' ? 'bg-green-500/10 border-green-500/20' : status === 'Good' ? 'bg-brand-500/10 border-brand-500/20' : 'bg-red-500/10 border-red-500/20';
+
+          return (
+            <div key={status} className="space-y-6">
+              <div className="flex items-center gap-4 px-2">
+                <h2 className={`text-xl font-black tracking-widest uppercase ${sectionTitle === 'Attention Required' ? 'text-red-500' : 'text-textMain'}`}>
+                  {sectionTitle}
+                </h2>
+                <div className={`h-[1px] flex-1 bg-border/50`}></div>
+                <span className={`px-3 py-1 rounded-full border text-[10px] font-black uppercase ${sectionBadge} ${sectionColor}`}>
+                  {depts.length} {depts.length === 1 ? 'Dept' : 'Depts'}
+                </span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {depts.map(dept => (
+                  <DepartmentCard key={dept.deptId} department={dept} onClick={() => setSelectedDepartment(dept)} />
+                ))}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* 🚨 ATTENTION ZONE (AI Insights running directly over nested distributions) */}
       <AttentionPanel departments={filteredDepartments} />
 
-      {/* 📋 SMART DEPARTMENT TABLE */}
-      <div className="mt-8 relative z-20">
+      {/* 📋 SMART DEPARTMENT TABLE - Hidden on mobile to reduce redundant clutter */}
+      <div className="mt-8 relative z-20 hidden md:block">
          <div className="flex justify-between items-end mb-4 px-2">
             <h2 className="text-lg font-black text-textMain uppercase tracking-widest flex items-center gap-2">
                 Organizational Hierarchy <span className="px-2 py-0.5 bg-brand-500/10 text-brand-500 text-[10px] rounded border border-brand-500/20">{totalDepartments} Nodes</span>

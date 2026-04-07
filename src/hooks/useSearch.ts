@@ -34,16 +34,16 @@ export const useSearch = (type: 'members' | 'teams', delay = 300) => {
                             }
                         }
                     });
-                    searchResults = Array.from(memberMap.values()).slice(0, 5); // Limit to top 5 hits
+                    searchResults = Array.from(memberMap.values()).slice(0, 10); // Increased from 5 to 10
                 } else if (type === 'teams') {
                     // Search unique teams
                     const teamMap = new Map();
                     globalData.forEach(m => {
-                        if (m.teamId && m.teamId.toLowerCase().includes(term)) {
+                        if (m.teamId && typeof m.teamId === 'string' && m.teamId.toLowerCase().includes(term)) {
                             teamMap.set(m.teamId, { id: m.teamId, name: m.teamId, deptId: m.deptId, sectionId: m.sectionId });
                         }
                     });
-                    searchResults = Array.from(teamMap.values()).slice(0, 5); // Limit to top 5 hits
+                    searchResults = Array.from(teamMap.values()).slice(0, 10); // Increased from 5 to 10
                 }
 
                 setResults(searchResults);
