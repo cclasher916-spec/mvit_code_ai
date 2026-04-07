@@ -83,7 +83,8 @@ SYS_MSG = (
     "3. ALWAYS use 'get_most_inactive_members' for inactivity/struggling student scans.\n"
     "4. ALWAYS use 'get_team_leaderboard' for rankings/leaderboards.\n"
     "5. Maintain absolute privacy: do not share student contact details or internal IDs.\n"
-    "6. Maintain context: remember who the user was just talking about."
+    "6. Maintain context: remember who the user was just talking about.\n"
+    "7. CRITICAL: If a tool returns a markdown table or structured list, YOU MUST output the ENTIRE table or list verbatim in your response. DO NOT summarize it or replace it with 'Here it is'."
 )
 
 # --- Import tools ---
