@@ -94,7 +94,7 @@ const AgentChat = () => {
 
       <AnimatePresence>
         {isOpen && (
-          <Draggable handle=".chat-header" bounds="body" defaultPosition={{x: 0, y: 0}}>
+          <Draggable handle=".chat-header" bounds="body" defaultPosition={{x: 0, y: 0}} cancel="button">
             <motion.div
               initial={{ opacity: 0, y: 50, scale: 0.9, x: 20 }}
               animate={isMinimized ? { 
