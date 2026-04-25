@@ -36,7 +36,7 @@ export default function OnboardingWizard() {
 
   const fetchExistingData = async () => {
     if (!formData.roll_number || !formData.student_email_address) {
-      addToast('Please enter both Roll Number and Email to fetch your application.', 'error');
+      addToast({ title: 'Please enter both Roll Number and Email to fetch your application.', type: 'error' });
       return;
     }
 
@@ -48,13 +48,13 @@ export default function OnboardingWizard() {
       if (result.success && result.data) {
         setFormData(result.data);
         setIsEditMode(true);
-        addToast('Application loaded successfully! You can now edit your details.', 'success');
+        addToast({ title: 'Application loaded successfully! You can now edit your details.', type: 'success' });
       } else {
-        addToast(result.error || 'No existing application found with these credentials.', 'error');
+        addToast({ title: result.error || 'No existing application found with these credentials.', type: 'error' });
       }
     } catch (error) {
       console.error(error);
-      addToast('Failed to connect to the server.', 'error');
+      addToast({ title: 'Failed to connect to the server.', type: 'error' });
     } finally {
       setIsFetching(false);
     }
@@ -63,7 +63,7 @@ export default function OnboardingWizard() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!GOOGLE_SHEETS_API_URL) {
-      addToast('System Error: Google Sheets API URL is not configured.', 'error');
+      addToast({ title: 'System Error: Google Sheets API URL is not configured.', type: 'error' });
       return;
     }
 
@@ -77,14 +77,14 @@ export default function OnboardingWizard() {
       const result = await response.json();
 
       if (result.success) {
-        addToast('Welcome to MVIT Coding Team! Your application is in review.', 'success');
+        addToast({ title: 'Welcome to MVIT Coding Team! Your application is in review.', type: 'success' });
         setStep(4); // Success screen
       } else {
-        addToast(result.error || 'Failed to submit application.', 'error');
+        addToast({ title: result.error || 'Failed to submit application.', type: 'error' });
       }
     } catch (error) {
       console.error(error);
-      addToast('Network error while submitting. Please try again.', 'error');
+      addToast({ title: 'Network error while submitting. Please try again.', type: 'error' });
     } finally {
       setIsSubmitting(false);
     }
