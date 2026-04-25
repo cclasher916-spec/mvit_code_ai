@@ -1,0 +1,36 @@
+name: Verify Single Task
+
+on:
+  repository_dispatch:
+    types: [verify_task]
+
+jobs:
+  verify-leetcode-submission:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: pip install -r agent_backend/requirements.txt
+
+      - name: Run Verification Script
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          FIREBASE_CREDENTIALS: ${{ secrets.FIREBASE_CREDENTIALS }}
+          # Extract the payload variables sent by the Supabase pg_net trigger
+          TASK_ID: ${{ github.event.client_payload.task_id }}
+          STUDENT_ID: ${{ github.event.client_payload.student_id }}
+          PLATFORM: ${{ github.event.client_payload.platform }}
+        run: |
+          echo "Starting verification for Task ID: $TASK_ID on $PLATFORM"
+          python agent_backend/verify_single_task.py \
+            --task-id "$TASK_ID" \
+            --student-id "$STUDENT_ID" \
+            --platform "$PLATFORM"

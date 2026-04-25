@@ -18,6 +18,7 @@ const IndividualDashboard = React.lazy(() => import('./pages/IndividualDashboard
 const StudentData = React.lazy(() => import('./pages/StudentData'));
 const Repositories = React.lazy(() => import('./pages/Repositories'));
 const AgentAdmin = React.lazy(() => import('./pages/AgentAdmin'));
+const OnboardingWizard = React.lazy(() => import('./pages/OnboardingWizard'));
 
 const LoadingSpinner = () => (
   <div className="flex w-full h-full min-h-[50vh] items-center justify-center">
@@ -58,6 +59,7 @@ function App() {
                         <Route path="/student-data" element={<StudentData />} />
                         <Route path="/settings/admin" element={<AgentAdmin />} />
                         <Route path="/agent-admin" element={<AgentAdmin />} />
+                        <Route path="/onboard" element={<OnboardingWizard />} />
                       </Routes>
                     </Suspense>
                   </ErrorBoundary>

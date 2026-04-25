@@ -63,6 +63,25 @@ class SupabaseBridge:
         try:
             self.client = create_client(url, key)
             print("✅ [SupabaseBridge] Connected to Supabase successfully")
+            
+            # Fetch valid columns for daily_activity to prevent schema cache errors
+            try:
+                import requests
+                headers = {"apikey": key, "Authorization": f"Bearer {key}"}
+                res = requests.get(f"{url}/rest/v1/", headers=headers, timeout=5)
+                if res.status_code == 200:
+                    data = res.json()
+                    da = data.get("definitions", {}).get("daily_activity", {})
+                    if "properties" in da:
+                        self.valid_daily_activity_columns = set(da["properties"].keys())
+                    else:
+                        self.valid_daily_activity_columns = None
+                else:
+                    self.valid_daily_activity_columns = None
+            except Exception as e:
+                print(f"⚠  [SupabaseBridge] Could not fetch OpenAPI spec: {e}")
+                self.valid_daily_activity_columns = None
+                
         except Exception as e:
             print(f"❌ [SupabaseBridge] Failed to connect: {e}")
 
@@ -172,6 +191,11 @@ class SupabaseBridge:
             "is_active":           total_daily > 0,
             "updated_at":          datetime.now(timezone.utc).isoformat(),
         }
+
+        # Dynamically filter payload to avoid PGRST204 errors for missing columns
+        if getattr(self, "valid_daily_activity_columns", None):
+            payload = {k: v for k, v in payload.items() if k in self.valid_daily_activity_columns}
+
 
         try:
             self.client.table("daily_activity").upsert(
