@@ -17,34 +17,6 @@ const IndividualDashboard: React.FC = () => {
   const [agentTasks, setAgentTasks] = useState<any[]>([]);
   const [analysis, setAnalysis] = useState<any>(null);
   
-  // Phase 2: Lightweight Test Mode
-  const [testMode, setTestMode] = useState(false);
-  const [testData, setTestData] = useState<any>(null);
-  const [testTimeLeft, setTestTimeLeft] = useState(30 * 60);
-
-  useEffect(() => {
-    let timer: any;
-    if (testMode && testTimeLeft > 0) {
-      timer = setInterval(() => {
-        setTestTimeLeft(prev => prev - 1);
-      }, 1000);
-    }
-    return () => clearInterval(timer);
-  }, [testMode, testTimeLeft]);
-
-  const startTest = async () => {
-    try {
-      const normalize = (str: string) => (str || "").replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
-      const targetName = normalize(memberInfo?.memberName || "");
-      const res = await fetch(`${API_BASE_URL}/student/${targetName}/start_test`);
-      if (res.ok) {
-        const d = await res.json();
-        setTestData(d.data);
-        setTestTimeLeft(d.data.duration_minutes * 60);
-        setTestMode(true);
-      }
-    } catch(err) { console.error(err); }
-  };
 
   useEffect(() => {
     if (!memberInfo) return;
@@ -197,57 +169,6 @@ const IndividualDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Test Mode Card */}
-      {!testMode ? (
-        <Card hover className="bg-gradient-to-r from-red-500/10 to-transparent border-red-500/20 mb-8 group overflow-hidden">
-          <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none transition-transform group-hover:scale-110 duration-500">
-             <Target className="w-48 h-48 text-red-500" />
-          </div>
-          <CardContent className="p-6 flex flex-col md:flex-row items-center justify-between relative z-10">
-            <div>
-              <h3 className="text-xl font-bold text-red-400 flex items-center gap-2">Benchmark Test Mode</h3>
-              <p className="text-sm text-textMuted mt-1 max-w-lg">Start a controlled evaluation session to demonstrate your skills. The system will assign 2 tasks dynamically.</p>
-            </div>
-            <button onClick={startTest} className="mt-4 md:mt-0 px-6 py-2 bg-red-500 hover:bg-red-600 shadow-[0_0_15px_rgba(239,68,68,0.5)] text-white font-bold rounded-lg transition-colors border border-red-400 flex items-center gap-2">
-              Start Evaluation <ChevronRight className="w-4 h-4" />
-            </button>
-          </CardContent>
-        </Card>
-      ) : (
-        <Card className="border-red-500 border-2 bg-surface shadow-[0_0_30px_rgba(239,68,68,0.2)] mb-8 animate-fade-in relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
-             <Target className="w-64 h-64 text-red-500 animate-pulse-slow" />
-          </div>
-          <CardHeader className="bg-red-500/10 border-b border-red-500/20">
-             <CardTitle className="text-2xl text-red-400 flex items-center gap-2">
-                <span className="animate-pulse">🔴</span> ACTIVE EVALUATION SESSION
-             </CardTitle>
-          </CardHeader>
-          <CardContent className="p-6 relative z-10">
-             <div className="flex flex-col md:flex-row items-start justify-between gap-8">
-               <div className="flex-1 w-full space-y-4">
-                 <p className="text-white font-medium">Solve the following assigned tasks. The system is monitoring your session parameters.</p>
-                 {testData?.problems?.map((p: any, i: number) => (
-                   <div key={i} className="p-4 bg-black/30 border border-white/10 rounded-lg shadow-inner">
-                     <span className={`px-2 py-1 text-xs font-semibold rounded mb-3 inline-block ${p.difficulty === 'Hard' ? 'bg-red-500/20 text-red-400' : p.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-500' : 'bg-green-500/20 text-green-400'}`}>{p.difficulty} Task</span>
-                     <p className="font-mono text-sm text-blue-400 break-all border-l-2 border-blue-500/50 pl-3"><a href={p.url} target="_blank" rel="noopener noreferrer" className="hover:underline">{p.url}</a></p>
-                     <p className="mt-2 text-xs text-textMuted flex items-center gap-1"><span className="text-gray-400 uppercase tracking-wider">Platform:</span> {p.platform}</p>
-                   </div>
-                 ))}
-               </div>
-               <div className="w-full md:w-64 text-center shrink-0 flex flex-col items-center">
-                 <div className="text-xs uppercase tracking-wider text-red-400 font-bold mb-2">Time Remaining</div>
-                 <div className="text-6xl font-mono font-black text-white bg-black/50 p-6 rounded-xl border border-red-500/30 font-display shadow-inner w-full flex justify-center">
-                   {Math.floor(testTimeLeft / 60).toString().padStart(2, '0')}:{(testTimeLeft % 60).toString().padStart(2, '0')}
-                 </div>
-                 <button onClick={() => setTestMode(false)} className="mt-6 w-full py-3 bg-red-500 text-white font-bold uppercase tracking-wider rounded-xl hover:bg-red-600 transition-colors shadow-lg shadow-red-500/30 flex justify-center items-center gap-2">
-                   Submit Results <CheckCircle className="w-4 h-4" />
-                 </button>
-               </div>
-             </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* AI Mentor Engine Card */}
       {analysis && (
