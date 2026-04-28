@@ -20,15 +20,16 @@ from firebase_admin import credentials, firestore
 # ===================== ENV & SECRETS =====================
 load_dotenv()
 
-GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")  # set in .env
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", "")
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "")  # optional for higher GitHub rate limits
 BREVO_SMTP_LOGIN = os.getenv("BREVO_SMTP_LOGIN", "")
 BREVO_SMTP_KEY = os.getenv("BREVO_SMTP_KEY", "")
 BREVO_SENDER_EMAIL = os.getenv("BREVO_SENDER_EMAIL", "")
 FIREBASE_CREDENTIALS_PATH = os.getenv("FIREBASE_CREDENTIALS_PATH", "coding-team-profiles-2b0b4df65b4a.json")
 
-if not GROQ_API_KEY:
-    print("⚠ GROQ_API_KEY not set; AI motivation will use fallbacks.")
+if not GROQ_API_KEY and not GOOGLE_API_KEY:
+    print("⚠ No AI API keys set; AI motivation will use fallbacks.")
 
 # --- Lazy Loader Helpers ---
 _db_instance = None
@@ -84,37 +85,59 @@ def get_personalized_motivation(name, daily_data):
         daily_data.get('hackerrank_daily_increase', 0) +
         daily_data.get('github_daily_increase', 0)
     )
-    if not GROQ_API_KEY:
+    if not (GROQ_API_KEY or GOOGLE_API_KEY):
         return _fallback_motivation(name, total_solved_today)
-    try:
-        prompt = (
-            f"Generate a short, personalized motivational message (<=50 words) for {name}, "
-            f"who solved {total_solved_today} problems today.\n"
-            f"LeetCode:+{daily_data.get('leetcode_daily_increase', 0)}, "
-            f"SkillRack:+{daily_data.get('skillrack_daily_increase', 0)}, "
-            f"CodeChef:+{daily_data.get('codechef_daily_increase', 0)}, "
-            f"HackerRank:+{daily_data.get('hackerrank_daily_increase', 0)}, "
-            f"GitHub:+{daily_data.get('github_daily_increase', 0)}.\n"
-            f"Be specific, encouraging, and authentic with emojis. If 0, nudge gently."
-        )
-        payload = {
-            "model": "llama3-8b-8192",
-            "messages": [{"role": "user", "content": prompt}],
-            "max_tokens": 60,
-            "temperature": 0.7
-        }
-        headers = {
-            "Authorization": f"Bearer {GROQ_API_KEY}",
-            "Content-Type": "application/json"
-        }
-        resp = requests.post("https://api.groq.com/openai/v1/chat/completions", json=payload, headers=headers, timeout=10)
-        resp.raise_for_status()
         
-        reply = resp.json().get("choices", [{}])[0].get("message", {}).get("content", "")
-        return reply.strip() or _fallback_motivation(name, total_solved_today)
-    except Exception as e:
-        print(f"⚠ Groq API error: {e}")
-        return _fallback_motivation(name, total_solved_today)
+    prompt = (
+        f"Generate a short, personalized motivational message (<=50 words) for {name}, "
+        f"who solved {total_solved_today} problems today.\n"
+        f"LeetCode:+{daily_data.get('leetcode_daily_increase', 0)}, "
+        f"SkillRack:+{daily_data.get('skillrack_daily_increase', 0)}, "
+        f"CodeChef:+{daily_data.get('codechef_daily_increase', 0)}, "
+        f"HackerRank:+{daily_data.get('hackerrank_daily_increase', 0)}, "
+        f"GitHub:+{daily_data.get('github_daily_increase', 0)}.\n"
+        f"Be specific, encouraging, and authentic with emojis. If 0, nudge gently."
+    )
+
+    # --- Try Gemini First ---
+    if GOOGLE_API_KEY:
+        try:
+            gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key={GOOGLE_API_KEY}"
+            payload = {
+                "contents": [{"parts": [{"text": prompt}]}],
+                "generationConfig": {"maxOutputTokens": 60, "temperature": 0.7}
+            }
+            resp = requests.post(gemini_url, json=payload, timeout=10)
+            resp.raise_for_status()
+            data = resp.json()
+            reply = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+            if reply.strip():
+                return reply.strip()
+        except Exception as e:
+            print(f"⚠ Gemini API error in Scraper: {e}")
+
+    # --- Fallback to Groq ---
+    if GROQ_API_KEY:
+        try:
+            payload = {
+                "model": "llama3-8b-8192",
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": 60,
+                "temperature": 0.7
+            }
+            headers = {
+                "Authorization": f"Bearer {GROQ_API_KEY}",
+                "Content-Type": "application/json"
+            }
+            resp = requests.post("https://api.groq.com/openai/v1/chat/completions", json=payload, headers=headers, timeout=10)
+            resp.raise_for_status()
+            reply = resp.json().get("choices", [{}])[0].get("message", {}).get("content", "")
+            if reply.strip():
+                return reply.strip()
+        except Exception as e:
+            print(f"⚠ Groq API error in Scraper: {e}")
+
+    return _fallback_motivation(name, total_solved_today)
 
 def _fallback_motivation(name, total):
     if total >= 15:

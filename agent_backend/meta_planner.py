@@ -8,13 +8,30 @@ import os
 import json
 import re
 from langchain_groq import ChatGroq
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import SystemMessage, HumanMessage
 from dotenv import load_dotenv
 
 dotenv_path = os.path.join(os.path.dirname(__file__), '../.env')
 load_dotenv(dotenv_path=dotenv_path)
 
-_planner_llm = ChatGroq(model_name="llama-3.3-70b-versatile", temperature=0)
+def _get_planner_llm():
+    groq_llm = ChatGroq(model_name="llama-3.3-70b-versatile", temperature=0)
+    google_key = os.getenv("GOOGLE_API_KEY")
+    if google_key:
+        try:
+            gemini_llm = ChatGoogleGenerativeAI(
+                model="gemini-3-flash-preview",
+                google_api_key=google_key,
+                temperature=0,
+                convert_system_message_to_human=True
+            )
+            return gemini_llm.with_fallbacks([groq_llm])
+        except Exception:
+            pass
+    return groq_llm
+
+_planner_llm = _get_planner_llm()
 
 PLANNER_SYSTEM = """You are a goal extraction engine for an autonomous campus AI agent.
 Given the user's message, extract ALL actionable goals and return ONLY valid JSON.

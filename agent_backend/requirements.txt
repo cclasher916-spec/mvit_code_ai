@@ -4,6 +4,8 @@ pydantic
 python-dotenv
 langchain
 langchain-groq
+langchain-google-genai
+google-generativeai
 langchain-core
 langchain-community
 langchain-huggingface

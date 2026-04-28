@@ -11,6 +11,7 @@ def _safe_uname():
 _platform.uname = _safe_uname
 
 from langchain_groq import ChatGroq
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage, ToolMessage
 from langchain_community.chat_message_histories import ChatMessageHistory
 from dotenv import load_dotenv
@@ -33,9 +34,23 @@ memory_store = {}
 rnn_states = {} # Stores the hidden state string for each session
 
 def get_llm():
-    """Lazily initialize LLM to keep startup fast."""
-    # TurboQuant optimization: using cache
-    return ChatGroq(model_name="llama-3.3-70b-versatile", temperature=0)
+    """Lazily initialize LLM with Gemini as primary and Groq as fallback."""
+    groq_llm = ChatGroq(model_name="llama-3.3-70b-versatile", temperature=0)
+    
+    google_key = os.getenv("GOOGLE_API_KEY")
+    if google_key:
+        try:
+            gemini_llm = ChatGoogleGenerativeAI(
+                model="gemini-3-flash-preview",
+                google_api_key=google_key,
+                temperature=0,
+                convert_system_message_to_human=True # Some Gemini versions prefer this
+            )
+            return gemini_llm.with_fallbacks([groq_llm])
+        except Exception as e:
+            print(f"⚠️ Gemini initialization failed, using Groq: {e}")
+    
+    return groq_llm
 
 def get_session_history(session_id: str) -> ChatMessageHistory:
     """Returns typical chat history, used for recent tool calls but managed by RNN."""
